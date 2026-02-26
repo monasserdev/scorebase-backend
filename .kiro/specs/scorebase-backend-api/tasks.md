@@ -460,14 +460,14 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Verify 90% code coverage for business logic
     - _Requirements: 12.12_
   
-  - [ ] 16.2 Deploy to staging environment
+  - [x] 16.2 Deploy to staging environment
     - Run database migrations
     - Deploy CDK stack to staging
     - Verify all endpoints are accessible
     - Verify monitoring and alarms are active
     - _Requirements: 12.1, 12.11_
   
-  - [ ] 16.3 Perform smoke tests in staging
+  - [x] 16.3 Perform smoke tests in staging
     - Test authentication flow with Cognito
     - Test creating and retrieving leagues, teams, players
     - Test creating games and events
@@ -475,7 +475,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Test error handling and logging
     - _Requirements: 1.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 11.1_
   
-  - [ ] 16.4 Final checkpoint - Ensure all tests pass
+  - [x] 16.4 Final checkpoint - Ensure all tests pass
     - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 17. Frontend integration and API documentation
