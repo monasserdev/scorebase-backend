@@ -496,7 +496,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Document multi-tenant isolation behavior
     - _Requirements: 14.1-14.13_
   
-  - [ ] 17.3 Create iOS integration guide
+  - [x] 17.3 Create iOS integration guide
     - Document API base URL and versioning strategy
     - Provide Cognito User Pool configuration details (pool ID, client ID, region)
     - Document JWT token format and required claims (tenant_id, user_id, roles)
