@@ -123,7 +123,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Test request_id values are valid UUIDs
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 4. Checkpoint - Ensure core utilities are functional
+- [x] 4. Checkpoint - Ensure core utilities are functional
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 5. Implement repository layer for data access
