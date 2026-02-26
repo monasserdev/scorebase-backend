@@ -364,7 +364,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 12.8, 12.9, 12.10_
 
 - [ ] 12. Implement CI/CD pipeline
-  - [ ] 12.1 Create GitHub Actions workflow
+  - [x] 12.1 Create GitHub Actions workflow
     - Add test job running unit tests and integration tests
     - Add build job compiling TypeScript to JavaScript
     - Add deploy job using AWS CDK
