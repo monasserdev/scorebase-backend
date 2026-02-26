@@ -479,7 +479,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 17. Frontend integration and API documentation
-  - [ ] 17.1 Generate OpenAPI/Swagger specification
+  - [x] 17.1 Generate OpenAPI/Swagger specification
     - Create OpenAPI 3.0 specification document for all API endpoints
     - Include request/response schemas with examples
     - Document authentication requirements (JWT Bearer token)

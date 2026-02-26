@@ -1,0 +1,1526 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ScoreBase Backend API",
+    "description": "Multi-tenant, event-driven REST API for sports league management.\n\n## Authentication\nAll endpoints require JWT Bearer token authentication via Amazon Cognito.\nInclude the token in the Authorization header: `Authorization: Bearer <token>`\n\n## Multi-Tenant Isolation\nAll requests are automatically scoped to the tenant_id extracted from the JWT token.\nCross-tenant data access is strictly prohibited and logged as security violations.\n\n## Rate Limiting\n- 1000 requests per second per tenant\n- Burst capacity: 2000 requests\n\n## Response Format\nAll successful responses follow this envelope format:\n```json\n{\n  \"request_id\": \"uuid\",\n  \"timestamp\": \"ISO-8601\",\n  \"data\": { ... }\n}\n```\n\n## Error Format\nAll error responses follow this format:\n```json\n{\n  \"error\": {\n    \"code\": \"ERROR_CODE\",\n    \"message\": \"Human-readable message\",\n    \"request_id\": \"uuid\",\n    \"details\": { ... }\n  }\n}\n```\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "ScoreBase Engineering Team",
+      "email": "engineering@scorebase.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.scorebase.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://api-staging.scorebase.com/v1",
+      "description": "Staging server"
+    },
+    {
+      "url": "http://localhost:3000/v1",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Leagues",
+      "description": "League management operations"
+    },
+    {
+      "name": "Seasons",
+      "description": "Season management operations"
+    },
+    {
+      "name": "Teams",
+      "description": "Team management operations"
+    },
+    {
+      "name": "Players",
+      "description": "Player management operations"
+    },
+    {
+      "name": "Games",
+      "description": "Game management operations"
+    },
+    {
+      "name": "Events",
+      "description": "Game event operations (event sourcing)"
+    },
+    {
+      "name": "Standings",
+      "description": "Team standings and rankings"
+    }
+  ],
+  "security": [
+    {
+      "CognitoAuth": []
+    }
+  ],
+  "paths": {
+    "/leagues": {
+      "get": {
+        "tags": [
+          "Leagues"
+        ],
+        "summary": "Get all leagues for tenant",
+        "description": "Returns all leagues belonging to the authenticated tenant",
+        "operationId": "getLeagues",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaguesResponse"
+                },
+                "example": {
+                  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+                  "timestamp": "2024-01-15T10:30:00Z",
+                  "data": [
+                    {
+                      "league_id": "league-123",
+                      "tenant_id": "tenant-456",
+                      "name": "Youth Basketball League",
+                      "sport_type": "basketball",
+                      "logo_url": "https://example.com/logo.png",
+                      "primary_color": "#0B2545",
+                      "secondary_color": "#FCCA46",
+                      "created_at": "2024-01-01T00:00:00Z",
+                      "updated_at": "2024-01-01T00:00:00Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/leagues/{leagueId}": {
+      "get": {
+        "tags": [
+          "Leagues"
+        ],
+        "summary": "Get league by ID",
+        "description": "Returns a single league by ID (must belong to authenticated tenant)",
+        "operationId": "getLeagueById",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LeagueIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeagueResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/leagues/{leagueId}/seasons": {
+      "get": {
+        "tags": [
+          "Seasons"
+        ],
+        "summary": "Get seasons for a league",
+        "description": "Returns all seasons for the specified league",
+        "operationId": "getSeasonsByLeague",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LeagueIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/leagues/{leagueId}/teams": {
+      "get": {
+        "tags": [
+          "Teams"
+        ],
+        "summary": "Get teams for a league",
+        "description": "Returns all teams for the specified league",
+        "operationId": "getTeamsByLeague",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LeagueIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/seasons/{seasonId}": {
+      "get": {
+        "tags": [
+          "Seasons"
+        ],
+        "summary": "Get season by ID",
+        "description": "Returns a single season by ID (must belong to authenticated tenant)",
+        "operationId": "getSeasonById",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SeasonIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/seasons/{seasonId}/games": {
+      "get": {
+        "tags": [
+          "Games"
+        ],
+        "summary": "Get games for a season",
+        "description": "Returns all games for the specified season with optional filters",
+        "operationId": "getGamesBySeason",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SeasonIdParam"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by game status",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "scheduled",
+                "live",
+                "final",
+                "postponed",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "query",
+            "description": "Filter by team (home or away)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Filter games on or after this date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "Filter games on or before this date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/seasons/{seasonId}/standings": {
+      "get": {
+        "tags": [
+          "Standings"
+        ],
+        "summary": "Get standings for a season",
+        "description": "Returns team standings for the specified season, ordered by points descending",
+        "operationId": "getStandingsBySeason",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SeasonIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandingsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/teams/{teamId}": {
+      "get": {
+        "tags": [
+          "Teams"
+        ],
+        "summary": "Get team by ID",
+        "description": "Returns a single team by ID (must belong to authenticated tenant)",
+        "operationId": "getTeamById",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TeamIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/teams/{teamId}/players": {
+      "get": {
+        "tags": [
+          "Players"
+        ],
+        "summary": "Get players for a team",
+        "description": "Returns all players for the specified team",
+        "operationId": "getPlayersByTeam",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TeamIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayersResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/players/{playerId}": {
+      "get": {
+        "tags": [
+          "Players"
+        ],
+        "summary": "Get player by ID",
+        "description": "Returns a single player by ID (must belong to authenticated tenant)",
+        "operationId": "getPlayerById",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PlayerIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/games/{gameId}": {
+      "get": {
+        "tags": [
+          "Games"
+        ],
+        "summary": "Get game by ID",
+        "description": "Returns a single game by ID (must belong to authenticated tenant)",
+        "operationId": "getGameById",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GameIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/games/{gameId}/events": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Get events for a game",
+        "description": "Returns all events for the specified game in chronological order",
+        "operationId": "getEventsByGame",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GameIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Create a game event",
+        "description": "Creates a new game event (requires scorekeeper role).\nEvents are immutable and stored in DynamoDB for event sourcing.\nGame state is automatically updated based on the event type.\n",
+        "operationId": "createEvent",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GameIdParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventRequest"
+              },
+              "examples": {
+                "goalScored": {
+                  "summary": "Goal scored event",
+                  "value": {
+                    "event_type": "GOAL_SCORED",
+                    "payload": {
+                      "team_id": "team-123",
+                      "player_id": "player-456",
+                      "period": 2,
+                      "time_remaining": "10:30"
+                    },
+                    "metadata": {
+                      "source": "mobile-app"
+                    }
+                  }
+                },
+                "gameStarted": {
+                  "summary": "Game started event",
+                  "value": {
+                    "event_type": "GAME_STARTED",
+                    "payload": {
+                      "start_time": "2024-01-15T19:00:00Z"
+                    },
+                    "metadata": {
+                      "source": "scorekeeper-app"
+                    }
+                  }
+                },
+                "gameFinalized": {
+                  "summary": "Game finalized event",
+                  "value": {
+                    "event_type": "GAME_FINALIZED",
+                    "payload": {
+                      "final_home_score": 3,
+                      "final_away_score": 2
+                    },
+                    "metadata": {
+                      "source": "scorekeeper-app"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Event created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "CognitoAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token from Amazon Cognito User Pool.\nToken must include tenant_id, user_id, and roles claims.\n"
+      }
+    },
+    "parameters": {
+      "LeagueIdParam": {
+        "name": "leagueId",
+        "in": "path",
+        "required": true,
+        "description": "League unique identifier",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "SeasonIdParam": {
+        "name": "seasonId",
+        "in": "path",
+        "required": true,
+        "description": "Season unique identifier",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "TeamIdParam": {
+        "name": "teamId",
+        "in": "path",
+        "required": true,
+        "description": "Team unique identifier",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "PlayerIdParam": {
+        "name": "playerId",
+        "in": "path",
+        "required": true,
+        "description": "Player unique identifier",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "GameIdParam": {
+        "name": "gameId",
+        "in": "path",
+        "required": true,
+        "description": "Game unique identifier",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "schemas": {
+      "League": {
+        "type": "object",
+        "required": [
+          "league_id",
+          "tenant_id",
+          "name",
+          "sport_type"
+        ],
+        "properties": {
+          "league_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the league"
+          },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Tenant identifier (multi-tenant isolation)"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "League name"
+          },
+          "sport_type": {
+            "type": "string",
+            "enum": [
+              "basketball",
+              "soccer",
+              "hockey",
+              "baseball",
+              "football"
+            ],
+            "description": "Type of sport"
+          },
+          "logo_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "URL to league logo"
+          },
+          "primary_color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "nullable": true,
+            "description": "Primary brand color (hex format)"
+          },
+          "secondary_color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "nullable": true,
+            "description": "Secondary brand color (hex format)"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
+        }
+      },
+      "Season": {
+        "type": "object",
+        "required": [
+          "season_id",
+          "league_id",
+          "name",
+          "start_date",
+          "end_date",
+          "is_active"
+        ],
+        "properties": {
+          "season_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "league_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "Whether this is the currently active season"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Team": {
+        "type": "object",
+        "required": [
+          "team_id",
+          "league_id",
+          "name"
+        ],
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "league_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "logo_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          },
+          "primary_color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "nullable": true
+          },
+          "secondary_color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Player": {
+        "type": "object",
+        "required": [
+          "player_id",
+          "team_id",
+          "first_name",
+          "last_name",
+          "jersey_number"
+        ],
+        "properties": {
+          "player_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "team_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "first_name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "last_name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "jersey_number": {
+            "type": "string",
+            "maxLength": 10
+          },
+          "position": {
+            "type": "string",
+            "maxLength": 50,
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Game": {
+        "type": "object",
+        "required": [
+          "game_id",
+          "season_id",
+          "home_team_id",
+          "away_team_id",
+          "scheduled_at",
+          "status",
+          "home_score",
+          "away_score"
+        ],
+        "properties": {
+          "game_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "season_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "home_team_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "away_team_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "live",
+              "final",
+              "postponed",
+              "cancelled"
+            ]
+          },
+          "home_score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "away_score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Standing": {
+        "type": "object",
+        "required": [
+          "standing_id",
+          "season_id",
+          "team_id",
+          "games_played",
+          "wins",
+          "losses",
+          "ties",
+          "points",
+          "goals_for",
+          "goals_against",
+          "goal_differential"
+        ],
+        "properties": {
+          "standing_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "season_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "team_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "games_played": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "losses": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Calculated as (wins × 3) + (ties × 1)"
+          },
+          "goals_for": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "goals_against": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "goal_differential": {
+            "type": "integer",
+            "description": "Calculated as goals_for - goals_against"
+          },
+          "streak": {
+            "type": "string",
+            "maxLength": 10,
+            "nullable": true,
+            "description": "Recent game results (e.g., \"W3\", \"L2\")"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "GameEvent": {
+        "type": "object",
+        "required": [
+          "event_id",
+          "game_id",
+          "tenant_id",
+          "event_type",
+          "event_version",
+          "occurred_at",
+          "payload",
+          "metadata"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "game_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "GAME_STARTED",
+              "GOAL_SCORED",
+              "PENALTY_ASSESSED",
+              "PERIOD_ENDED",
+              "GAME_FINALIZED",
+              "GAME_CANCELLED",
+              "SCORE_CORRECTED"
+            ]
+          },
+          "event_version": {
+            "type": "string",
+            "description": "Schema version (e.g., \"1.0\")"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payload": {
+            "type": "object",
+            "description": "Event-specific data"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "user_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "source": {
+                "type": "string"
+              },
+              "ip_address": {
+                "type": "string"
+              }
+            }
+          },
+          "ttl": {
+            "type": "integer",
+            "description": "Unix timestamp for DynamoDB TTL (90 days)"
+          }
+        }
+      },
+      "CreateEventRequest": {
+        "type": "object",
+        "required": [
+          "event_type",
+          "payload"
+        ],
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "GAME_STARTED",
+              "GOAL_SCORED",
+              "PENALTY_ASSESSED",
+              "PERIOD_ENDED",
+              "GAME_FINALIZED",
+              "GAME_CANCELLED",
+              "SCORE_CORRECTED"
+            ]
+          },
+          "payload": {
+            "type": "object",
+            "description": "Event-specific payload data"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "ip_address": {
+                "type": "string",
+                "maxLength": 45
+              }
+            }
+          }
+        }
+      },
+      "ApiResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "timestamp",
+          "data"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique request identifier for tracing"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Response timestamp (ISO-8601)"
+          },
+          "data": {
+            "type": "object",
+            "description": "Response payload"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "request_id"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Machine-readable error code"
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable error message"
+              },
+              "request_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Request identifier for debugging"
+              },
+              "details": {
+                "type": "object",
+                "description": "Additional error context"
+              }
+            }
+          }
+        }
+      },
+      "LeaguesResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/League"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "LeagueResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/League"
+              }
+            }
+          }
+        ]
+      },
+      "SeasonsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Season"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "SeasonResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/Season"
+              }
+            }
+          }
+        ]
+      },
+      "TeamsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TeamResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/Team"
+              }
+            }
+          }
+        ]
+      },
+      "PlayersResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Player"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PlayerResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/Player"
+              }
+            }
+          }
+        ]
+      },
+      "GamesResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "GameResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/Game"
+              }
+            }
+          }
+        ]
+      },
+      "StandingsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Standing"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "EventsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GameEvent"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "EventResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/GameEvent"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "responses": {
+      "BadRequestError": {
+        "description": "Bad request - invalid input",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Invalid request payload",
+                "request_id": "550e8400-e29b-41d4-a716-446655440000",
+                "details": {
+                  "field": "event_type",
+                  "issue": "Must be one of: GAME_STARTED, GOAL_SCORED, etc."
+                }
+              }
+            }
+          }
+        }
+      },
+      "UnauthorizedError": {
+        "description": "Unauthorized - missing or invalid JWT token",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "UNAUTHORIZED",
+                "message": "Invalid or expired JWT token",
+                "request_id": "550e8400-e29b-41d4-a716-446655440000"
+              }
+            }
+          }
+        }
+      },
+      "ForbiddenError": {
+        "description": "Forbidden - insufficient permissions",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "FORBIDDEN",
+                "message": "Scorekeeper role required for this operation",
+                "request_id": "550e8400-e29b-41d4-a716-446655440000"
+              }
+            }
+          }
+        }
+      },
+      "NotFoundError": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "NOT_FOUND",
+                "message": "League not found",
+                "request_id": "550e8400-e29b-41d4-a716-446655440000"
+              }
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "An unexpected error occurred",
+                "request_id": "550e8400-e29b-41d4-a716-446655440000"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
