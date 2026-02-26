@@ -10,6 +10,7 @@
 import * as jwt from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
 import { JWTClaims, AuthContext, AuthError, AuthErrorCode } from '../models/auth';
+import { logAuthentication } from '../utils/logger';
 
 /**
  * JWKS client cache
@@ -93,13 +94,15 @@ function extractToken(authHeader: string | undefined): string {
  * @param authHeader - Authorization header value (Bearer <token>)
  * @param userPoolId - Cognito User Pool ID
  * @param region - AWS region
+ * @param requestId - Optional request ID for logging
  * @returns Authenticated user context
  * @throws AuthError for invalid, expired, or malformed tokens
  */
 export async function validateJWT(
   authHeader: string | undefined,
   userPoolId: string,
-  region: string
+  region: string,
+  requestId?: string
 ): Promise<AuthContext> {
   try {
     // Extract token from header
@@ -152,10 +155,28 @@ export async function validateJWT(
       email: claims.email,
     };
 
+    // Log successful authentication
+    if (requestId) {
+      logAuthentication({
+        requestId,
+        success: true,
+        tenantId: authContext.tenant_id,
+        userId: authContext.user_id,
+        username: authContext.username,
+      });
+    }
+
     return authContext;
   } catch (error) {
     // Handle specific JWT errors
     if (error instanceof jwt.TokenExpiredError) {
+      if (requestId) {
+        logAuthentication({
+          requestId,
+          success: false,
+          reason: 'Token has expired',
+        });
+      }
       throw new AuthError(
         AuthErrorCode.EXPIRED_TOKEN,
         'Token has expired'
@@ -163,6 +184,13 @@ export async function validateJWT(
     }
 
     if (error instanceof jwt.JsonWebTokenError) {
+      if (requestId) {
+        logAuthentication({
+          requestId,
+          success: false,
+          reason: 'Invalid token signature',
+        });
+      }
       throw new AuthError(
         AuthErrorCode.INVALID_SIGNATURE,
         'Invalid token signature'
@@ -171,13 +199,28 @@ export async function validateJWT(
 
     // Re-throw AuthError as-is
     if (error instanceof AuthError) {
+      if (requestId) {
+        logAuthentication({
+          requestId,
+          success: false,
+          reason: error.message,
+        });
+      }
       throw error;
     }
 
     // Wrap unknown errors
+    const errorMessage = `Token validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    if (requestId) {
+      logAuthentication({
+        requestId,
+        success: false,
+        reason: errorMessage,
+      });
+    }
     throw new AuthError(
       AuthErrorCode.INVALID_TOKEN,
-      `Token validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      errorMessage
     );
   }
 }

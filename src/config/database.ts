@@ -10,6 +10,7 @@
 
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { loadEnvironmentConfig } from './environment';
+import { logDatabase } from '../utils/logger';
 
 // Global pool instance for Lambda warm starts
 let pool: Pool | null = null;
@@ -58,7 +59,11 @@ export function getPool(): Pool {
 
     // Handle pool errors
     pool.on('error', (err) => {
-      console.error('Unexpected database pool error:', err);
+      logDatabase({
+        errorMessage: err.message,
+        query: 'Pool error',
+        operation: 'POOL_ERROR',
+      });
     });
   }
 

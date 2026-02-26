@@ -49,14 +49,14 @@ describe('Multi-Tenant Isolation Middleware', () => {
           message: 'tenant_id is required for all database queries',
         });
 
-        // Verify security violation was logged
-        expect(console.error).toHaveBeenCalledWith(
-          'SECURITY_VIOLATION',
-          expect.objectContaining({
-            violation_type: 'MISSING_TENANT_ID',
-            severity: 'HIGH',
-          })
-        );
+        // Verify security violation was logged with structured logging
+        expect(console.error).toHaveBeenCalled();
+        const logCall = (console.error as jest.Mock).mock.calls[0][0];
+        const logEntry = JSON.parse(logCall);
+        
+        expect(logEntry.log_type).toBe('SECURITY_VIOLATION');
+        expect(logEntry.violation_type).toBe('MISSING_TENANT_ID');
+        expect(logEntry.severity).toBe('HIGH');
       });
 
       it('should throw error when tenant_id is not a valid UUID', async () => {
@@ -74,14 +74,14 @@ describe('Multi-Tenant Isolation Middleware', () => {
           message: 'tenant_id must be a valid UUID',
         });
 
-        // Verify security violation was logged
-        expect(console.error).toHaveBeenCalledWith(
-          'SECURITY_VIOLATION',
-          expect.objectContaining({
-            violation_type: 'INVALID_TENANT_ID_FORMAT',
-            severity: 'HIGH',
-          })
-        );
+        // Verify security violation was logged with structured logging
+        expect(console.error).toHaveBeenCalled();
+        const logCall = (console.error as jest.Mock).mock.calls[0][0];
+        const logEntry = JSON.parse(logCall);
+        
+        expect(logEntry.log_type).toBe('SECURITY_VIOLATION');
+        expect(logEntry.violation_type).toBe('INVALID_TENANT_ID_FORMAT');
+        expect(logEntry.severity).toBe('HIGH');
       });
 
       it('should accept valid UUID tenant_id', async () => {
@@ -115,14 +115,14 @@ describe('Multi-Tenant Isolation Middleware', () => {
           message: 'Query must include tenant_id filter in WHERE clause',
         });
 
-        // Verify security violation was logged
-        expect(console.error).toHaveBeenCalledWith(
-          'SECURITY_VIOLATION',
-          expect.objectContaining({
-            violation_type: 'QUERY_MISSING_TENANT_FILTER',
-            severity: 'HIGH',
-          })
-        );
+        // Verify security violation was logged with structured logging
+        expect(console.error).toHaveBeenCalled();
+        const logCall = (console.error as jest.Mock).mock.calls[0][0];
+        const logEntry = JSON.parse(logCall);
+        
+        expect(logEntry.log_type).toBe('SECURITY_VIOLATION');
+        expect(logEntry.violation_type).toBe('QUERY_MISSING_TENANT_FILTER');
+        expect(logEntry.severity).toBe('HIGH');
       });
 
       it('should accept query with tenant_id filter', async () => {
@@ -283,18 +283,16 @@ describe('Multi-Tenant Isolation Middleware', () => {
           },
         });
 
-        // Verify security violation was logged
-        expect(console.error).toHaveBeenCalledWith(
-          'SECURITY_VIOLATION',
-          expect.objectContaining({
-            violation_type: 'CROSS_TENANT_DATA_LEAKAGE',
-            severity: 'HIGH',
-            details: expect.objectContaining({
-              expected_tenant_id: validTenantId,
-              actual_tenant_id: otherTenantId,
-            }),
-          })
-        );
+        // Verify security violation was logged with structured logging
+        expect(console.error).toHaveBeenCalled();
+        const logCall = (console.error as jest.Mock).mock.calls[0][0];
+        const logEntry = JSON.parse(logCall);
+        
+        expect(logEntry.log_type).toBe('SECURITY_VIOLATION');
+        expect(logEntry.violation_type).toBe('CROSS_TENANT_DATA_LEAKAGE');
+        expect(logEntry.severity).toBe('HIGH');
+        expect(logEntry.context.expected_tenant_id).toBe(validTenantId);
+        expect(logEntry.context.actual_tenant_id).toBe(otherTenantId);
       });
 
       it('should handle empty result set', async () => {
@@ -443,16 +441,16 @@ describe('Multi-Tenant Isolation Middleware', () => {
         enforceMultiTenantIsolation(validTenantId, query, ['123'])
       ).rejects.toThrow();
 
-      expect(console.error).toHaveBeenCalledWith(
-        'SECURITY_VIOLATION',
-        expect.objectContaining({
-          timestamp: expect.any(String),
-          tenant_id: validTenantId,
-          violation_type: 'QUERY_MISSING_TENANT_FILTER',
-          severity: 'HIGH',
-          details: expect.any(Object),
-        })
-      );
+      expect(console.error).toHaveBeenCalled();
+      const logCall = (console.error as jest.Mock).mock.calls[0][0];
+      const logEntry = JSON.parse(logCall);
+      
+      expect(logEntry.log_type).toBe('SECURITY_VIOLATION');
+      expect(logEntry.timestamp).toBeDefined();
+      expect(logEntry.tenant_id).toBe(validTenantId);
+      expect(logEntry.violation_type).toBe('QUERY_MISSING_TENANT_FILTER');
+      expect(logEntry.severity).toBe('HIGH');
+      expect(logEntry.context).toBeDefined();
     });
 
     it('should include query details in security logs', async () => {
@@ -462,14 +460,11 @@ describe('Multi-Tenant Isolation Middleware', () => {
         enforceMultiTenantIsolation(validTenantId, query, ['123'])
       ).rejects.toThrow();
 
-      expect(console.error).toHaveBeenCalledWith(
-        'SECURITY_VIOLATION',
-        expect.objectContaining({
-          details: expect.objectContaining({
-            query: expect.stringContaining('SELECT'),
-          }),
-        })
-      );
+      expect(console.error).toHaveBeenCalled();
+      const logCall = (console.error as jest.Mock).mock.calls[0][0];
+      const logEntry = JSON.parse(logCall);
+      
+      expect(logEntry.context.query).toContain('SELECT');
     });
   });
 });

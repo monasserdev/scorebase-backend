@@ -10,6 +10,7 @@
 
 import { QueryResult, QueryResultRow } from 'pg';
 import { query as dbQuery } from '../config/database';
+import { logSecurity } from '../utils/logger';
 
 /**
  * Multi-tenant isolation error types
@@ -47,19 +48,18 @@ function isValidUUID(value: string): boolean {
 }
 
 /**
- * Log security violation to CloudWatch
+ * Log security violation using structured logging
  */
 function logSecurityViolation(
   tenantId: string,
   violationType: string,
   details: any
 ): void {
-  console.error('SECURITY_VIOLATION', {
-    timestamp: new Date().toISOString(),
-    tenant_id: tenantId,
-    violation_type: violationType,
-    details,
+  logSecurity({
+    tenantId: tenantId === 'UNKNOWN' ? undefined : tenantId,
+    violationType,
     severity: 'HIGH',
+    context: details,
   });
 }
 

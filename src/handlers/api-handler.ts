@@ -19,6 +19,7 @@ import {
 } from '../utils/response-formatter';
 import { HttpStatus } from '../models/response';
 import { loadEnvironmentConfig } from '../config/environment';
+import { logRequest, logAuthorization } from '../utils/logger';
 
 // Import services
 import { LeagueService } from '../services/league-service';
@@ -400,30 +401,6 @@ function hasRequiredRole(userRoles: string[], requiredRole?: string): boolean {
 }
 
 /**
- * Log request to CloudWatch
- */
-function logRequest(
-  requestId: string,
-  method: string,
-  path: string,
-  tenantId: string,
-  userId: string,
-  statusCode: number,
-  latencyMs: number
-): void {
-  console.log(JSON.stringify({
-    request_id: requestId,
-    tenant_id: tenantId,
-    user_id: userId,
-    method,
-    path,
-    status_code: statusCode,
-    latency_ms: latencyMs,
-    timestamp: new Date().toISOString(),
-  }));
-}
-
-/**
  * Main Lambda handler
  * 
  * This handler:
@@ -459,21 +436,52 @@ export async function handler(
     const authContext = await validateJWT(
       authHeader,
       config.cognitoUserPoolId,
-      region
+      region,
+      requestId
     );
 
     // Find matching route
     const route = findRoute(method, path);
     if (!route) {
       const latencyMs = Date.now() - startTime;
-      logRequest(requestId, method, path, authContext.tenant_id, authContext.user_id, 404, latencyMs);
+      logRequest({
+        requestId,
+        method,
+        path,
+        tenantId: authContext.tenant_id,
+        userId: authContext.user_id,
+        statusCode: 404,
+        latencyMs,
+      });
       return notFoundErrorResponse('Route not found', requestId);
     }
 
     // Check role-based authorization
     if (!hasRequiredRole(authContext.roles, route.requiredRole)) {
       const latencyMs = Date.now() - startTime;
-      logRequest(requestId, method, path, authContext.tenant_id, authContext.user_id, 403, latencyMs);
+      
+      // Log authorization failure
+      logAuthorization({
+        requestId,
+        tenantId: authContext.tenant_id,
+        userId: authContext.user_id,
+        success: false,
+        action: `${method} ${path}`,
+        resource: path,
+        requiredRole: route.requiredRole,
+        userRoles: authContext.roles,
+      });
+      
+      logRequest({
+        requestId,
+        method,
+        path,
+        tenantId: authContext.tenant_id,
+        userId: authContext.user_id,
+        statusCode: 403,
+        latencyMs,
+      });
+      
       return authorizationErrorResponse(
         `Insufficient permissions. Required role: ${route.requiredRole}`,
         requestId
@@ -491,7 +499,15 @@ export async function handler(
 
     // Log successful request
     const latencyMs = Date.now() - startTime;
-    logRequest(requestId, method, path, authContext.tenant_id, authContext.user_id, result.statusCode, latencyMs);
+    logRequest({
+      requestId,
+      method,
+      path,
+      tenantId: authContext.tenant_id,
+      userId: authContext.user_id,
+      statusCode: result.statusCode,
+      latencyMs,
+    });
 
     return result;
   } catch (error) {
@@ -500,8 +516,16 @@ export async function handler(
     // Use centralized error handling middleware
     const errorResponse = handleError(error, requestId);
     
-    // Log error request
-    logRequest(requestId, method, path, 'unknown', 'unknown', errorResponse.statusCode, latencyMs);
+    // Log error request (tenant/user may be unknown if auth failed)
+    logRequest({
+      requestId,
+      method,
+      path,
+      tenantId: 'unknown',
+      userId: 'unknown',
+      statusCode: errorResponse.statusCode,
+      latencyMs,
+    });
     
     return errorResponse;
   }
