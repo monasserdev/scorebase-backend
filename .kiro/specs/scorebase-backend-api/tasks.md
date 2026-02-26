@@ -51,7 +51,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Add foreign key constraints with CASCADE deletes
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 7.1_
   
-  - [~] 2.3 Create indexes migration (V002)
+  - [x] 2.3 Create indexes migration (V002)
     - Add indexes on all tenant_id columns
     - Add indexes on foreign keys (league_id, season_id, team_id)
     - Add indexes on frequently queried columns (status, scheduled_at, is_active)
