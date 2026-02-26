@@ -488,7 +488,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Export specification as JSON and YAML formats
     - _Requirements: 14.1-14.13, 8.1, 8.2_
   
-  - [ ] 17.2 Set up API documentation hosting
+  - [x] 17.2 Set up API documentation hosting
     - Deploy Swagger UI or ReDoc for interactive API documentation
     - Host documentation at /api-docs endpoint or separate subdomain
     - Include "Try it out" functionality for testing endpoints

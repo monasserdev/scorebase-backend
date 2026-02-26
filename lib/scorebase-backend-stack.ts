@@ -448,13 +448,54 @@ export class ScorebaseBackendStack extends cdk.Stack {
     void requestValidator;
     void eventRequestModel;
 
-    // Lambda Integration
+    // ========================================
+    // Documentation Lambda Function (Task 17.2)
+    // ========================================
+    const docsFunction = new lambda.Function(this, 'ScoreBaseDocsFunction', {
+      functionName: 'scorebase-api-docs',
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'handlers/docs-handler.handler',
+      code: lambda.Code.fromAsset('dist'),
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      logRetention: logs.RetentionDays.ONE_WEEK,
+      environment: {
+        NODE_ENV: 'production',
+      },
+    });
+
+    // Task 15.2: Add resource tags
+    cdk.Tags.of(docsFunction).add('Environment', environment);
+    cdk.Tags.of(docsFunction).add('Feature', 'api-docs');
+
+    // Lambda Integration for main API
     const lambdaIntegration = new apigateway.LambdaIntegration(apiFunction, {
       proxy: true,
       allowTestInvoke: true,
     });
 
-    // Add proxy resource to handle all routes
+    // Lambda Integration for documentation (no auth required)
+    const docsIntegration = new apigateway.LambdaIntegration(docsFunction, {
+      proxy: true,
+      allowTestInvoke: true,
+    });
+
+    // Add /api-docs resource (public, no authentication)
+    const apiDocsResource = api.root.addResource('api-docs');
+    apiDocsResource.addMethod('GET', docsIntegration, {
+      authorizationType: apigateway.AuthorizationType.NONE,
+    });
+
+    // Add proxy under /api-docs for serving static files
+    apiDocsResource.addProxy({
+      defaultIntegration: docsIntegration,
+      anyMethod: false,
+      defaultMethodOptions: {
+        authorizationType: apigateway.AuthorizationType.NONE,
+      },
+    });
+
+    // Add proxy resource to handle all API routes (with auth)
     api.root.addProxy({
       defaultIntegration: lambdaIntegration,
       anyMethod: true,
