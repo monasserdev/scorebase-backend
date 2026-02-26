@@ -11,6 +11,7 @@
 import { QueryResult, QueryResultRow } from 'pg';
 import { query as dbQuery } from '../config/database';
 import { logSecurity } from '../utils/logger';
+import { emitCrossTenantAccessAttempt } from '../utils/metrics';
 
 /**
  * Multi-tenant isolation error types
@@ -60,6 +61,19 @@ function logSecurityViolation(
     violationType,
     severity: 'HIGH',
     context: details,
+  });
+  
+  // Emit CloudWatch metric for cross-tenant access attempts
+  emitCrossTenantAccessAttempt(
+    tenantId === 'UNKNOWN' ? 'UNKNOWN' : tenantId,
+    violationType
+  ).catch(error => {
+    // Log error but don't throw - metrics should not break application flow
+    console.error('Failed to emit cross-tenant access metric', {
+      tenantId,
+      violationType,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
   });
 }
 

@@ -16,6 +16,7 @@ import {
   CreateEventParams,
   GetEventsParams,
 } from '../models/event';
+import { emitEventWriteLatency } from '../utils/metrics';
 
 // Global DynamoDB client instance for Lambda warm starts
 let dynamodbClient: DynamoDBDocumentClient | null = null;
@@ -86,6 +87,7 @@ function createSortKey(occurred_at: string, event_id: string): string {
 export async function writeEvent(
   params: CreateEventParams
 ): Promise<GameEvent> {
+  const startTime = Date.now();
   const client = getDynamoDBClient();
   const config = loadEnvironmentConfig();
 
@@ -107,14 +109,25 @@ export async function writeEvent(
     ttl,
   };
 
-  await client.send(
-    new PutCommand({
-      TableName: config.dynamodbTableName,
-      Item: event,
-    })
-  );
+  try {
+    await client.send(
+      new PutCommand({
+        TableName: config.dynamodbTableName,
+        Item: event,
+      })
+    );
 
-  return event;
+    // Emit metric for event write latency
+    const latency = Date.now() - startTime;
+    await emitEventWriteLatency(params.tenant_id, params.event_type, latency);
+
+    return event;
+  } catch (error) {
+    // Emit metric even on error
+    const latency = Date.now() - startTime;
+    await emitEventWriteLatency(params.tenant_id, params.event_type, latency);
+    throw error;
+  }
 }
 
 /**

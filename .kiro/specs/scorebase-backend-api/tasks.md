@@ -352,7 +352,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Add alarm for API Gateway 5xx errors
     - _Requirements: 12.8, 12.9, 12.10_
   
-  - [ ] 11.2 Add custom CloudWatch metrics
+  - [x] 11.2 Add custom CloudWatch metrics
     - Emit metric for standings calculation duration
     - Emit metric for event write latency
     - Emit metric for cross-tenant access attempts

@@ -21,6 +21,7 @@ import { SeasonRepository } from '../repositories/season-repository';
 import { TeamRepository } from '../repositories/team-repository';
 import { GameStatus } from '../models/game';
 import { StandingUpsertData } from '../models/standing';
+import { emitStandingsCalculationDuration } from './metrics';
 
 /**
  * Standing data accumulator for calculation
@@ -110,124 +111,137 @@ export async function recalculateStandings(
   seasonRepository: SeasonRepository,
   teamRepository: TeamRepository
 ): Promise<void> {
-  // 1. Fetch the season to get league_id
-  const season = await seasonRepository.findById(tenantId, seasonId);
-  if (!season) {
-    throw new Error(`Season not found: ${seasonId}`);
-  }
-
-  // 2. Fetch all teams in the league
-  const teams = await teamRepository.findByLeagueId(tenantId, season.league_id);
-
-  // 3. Fetch all finalized games for the season
-  const finalizedGames = await gameRepository.findBySeasonId(
-    tenantId,
-    seasonId,
-    { status: GameStatus.FINAL }
-  );
-
-  // 4. Initialize standings map for all teams
-  const standingsMap = new Map<string, StandingAccumulator>();
+  const startTime = Date.now();
   
-  for (const team of teams) {
-    standingsMap.set(team.id, {
-      season_id: seasonId,
-      team_id: team.id,
-      games_played: 0,
-      wins: 0,
-      losses: 0,
-      ties: 0,
-      points: 0,
-      goals_for: 0,
-      goals_against: 0,
-      goal_differential: 0,
-      recent_results: [],
-    });
-  }
-
-  // 5. Process each game to update standings
-  // Sort games by scheduled_at to ensure chronological processing for streaks
-  const sortedGames = [...finalizedGames].sort(
-    (a, b) => a.scheduled_at.getTime() - b.scheduled_at.getTime()
-  );
-
-  for (const game of sortedGames) {
-    const homeStanding = standingsMap.get(game.home_team_id);
-    const awayStanding = standingsMap.get(game.away_team_id);
-
-    // Skip if teams not found (shouldn't happen with proper data)
-    if (!homeStanding || !awayStanding) {
-      continue;
+  try {
+    // 1. Fetch the season to get league_id
+    const season = await seasonRepository.findById(tenantId, seasonId);
+    if (!season) {
+      throw new Error(`Season not found: ${seasonId}`);
     }
 
-    // Determine game result
-    if (game.home_score > game.away_score) {
-      // Home team wins
-      homeStanding.wins++;
-      homeStanding.points += 3;
-      homeStanding.recent_results.unshift('W');
-      
-      awayStanding.losses++;
-      awayStanding.recent_results.unshift('L');
-    } else if (game.home_score < game.away_score) {
-      // Away team wins
-      awayStanding.wins++;
-      awayStanding.points += 3;
-      awayStanding.recent_results.unshift('W');
-      
-      homeStanding.losses++;
-      homeStanding.recent_results.unshift('L');
-    } else {
-      // Tie
-      homeStanding.ties++;
-      homeStanding.points += 1;
-      homeStanding.recent_results.unshift('T');
-      
-      awayStanding.ties++;
-      awayStanding.points += 1;
-      awayStanding.recent_results.unshift('T');
-    }
+    // 2. Fetch all teams in the league
+    const teams = await teamRepository.findByLeagueId(tenantId, season.league_id);
 
-    // Update games played
-    homeStanding.games_played++;
-    awayStanding.games_played++;
+    // 3. Fetch all finalized games for the season
+    const finalizedGames = await gameRepository.findBySeasonId(
+      tenantId,
+      seasonId,
+      { status: GameStatus.FINAL }
+    );
 
-    // Update goals
-    homeStanding.goals_for += game.home_score;
-    homeStanding.goals_against += game.away_score;
-    awayStanding.goals_for += game.away_score;
-    awayStanding.goals_against += game.home_score;
-
-    // Limit recent results to last 10 games for streak calculation
-    if (homeStanding.recent_results.length > 10) {
-      homeStanding.recent_results = homeStanding.recent_results.slice(0, 10);
-    }
-    if (awayStanding.recent_results.length > 10) {
-      awayStanding.recent_results = awayStanding.recent_results.slice(0, 10);
-    }
-  }
-
-  // 6. Calculate goal differential and prepare upsert data
-  const standingsData: StandingUpsertData[] = [];
-  
-  for (const standing of Array.from(standingsMap.values())) {
-    standing.goal_differential = standing.goals_for - standing.goals_against;
+    // 4. Initialize standings map for all teams
+    const standingsMap = new Map<string, StandingAccumulator>();
     
-    standingsData.push({
-      season_id: standing.season_id,
-      team_id: standing.team_id,
-      games_played: standing.games_played,
-      wins: standing.wins,
-      losses: standing.losses,
-      ties: standing.ties,
-      points: standing.points,
-      goals_for: standing.goals_for,
-      goals_against: standing.goals_against,
-      goal_differential: standing.goal_differential,
-      streak: calculateStreak(standing.recent_results),
-    });
-  }
+    for (const team of teams) {
+      standingsMap.set(team.id, {
+        season_id: seasonId,
+        team_id: team.id,
+        games_played: 0,
+        wins: 0,
+        losses: 0,
+        ties: 0,
+        points: 0,
+        goals_for: 0,
+        goals_against: 0,
+        goal_differential: 0,
+        recent_results: [],
+      });
+    }
 
-  // 7. Persist standings to database using transaction
-  await standingsRepository.upsertStandings(standingsData);
+    // 5. Process each game to update standings
+    // Sort games by scheduled_at to ensure chronological processing for streaks
+    const sortedGames = [...finalizedGames].sort(
+      (a, b) => a.scheduled_at.getTime() - b.scheduled_at.getTime()
+    );
+
+    for (const game of sortedGames) {
+      const homeStanding = standingsMap.get(game.home_team_id);
+      const awayStanding = standingsMap.get(game.away_team_id);
+
+      // Skip if teams not found (shouldn't happen with proper data)
+      if (!homeStanding || !awayStanding) {
+        continue;
+      }
+
+      // Determine game result
+      if (game.home_score > game.away_score) {
+        // Home team wins
+        homeStanding.wins++;
+        homeStanding.points += 3;
+        homeStanding.recent_results.unshift('W');
+        
+        awayStanding.losses++;
+        awayStanding.recent_results.unshift('L');
+      } else if (game.home_score < game.away_score) {
+        // Away team wins
+        awayStanding.wins++;
+        awayStanding.points += 3;
+        awayStanding.recent_results.unshift('W');
+        
+        homeStanding.losses++;
+        homeStanding.recent_results.unshift('L');
+      } else {
+        // Tie
+        homeStanding.ties++;
+        homeStanding.points += 1;
+        homeStanding.recent_results.unshift('T');
+        
+        awayStanding.ties++;
+        awayStanding.points += 1;
+        awayStanding.recent_results.unshift('T');
+      }
+
+      // Update games played
+      homeStanding.games_played++;
+      awayStanding.games_played++;
+
+      // Update goals
+      homeStanding.goals_for += game.home_score;
+      homeStanding.goals_against += game.away_score;
+      awayStanding.goals_for += game.away_score;
+      awayStanding.goals_against += game.home_score;
+
+      // Limit recent results to last 10 games for streak calculation
+      if (homeStanding.recent_results.length > 10) {
+        homeStanding.recent_results = homeStanding.recent_results.slice(0, 10);
+      }
+      if (awayStanding.recent_results.length > 10) {
+        awayStanding.recent_results = awayStanding.recent_results.slice(0, 10);
+      }
+    }
+
+    // 6. Calculate goal differential and prepare upsert data
+    const standingsData: StandingUpsertData[] = [];
+    
+    for (const standing of Array.from(standingsMap.values())) {
+      standing.goal_differential = standing.goals_for - standing.goals_against;
+      
+      standingsData.push({
+        season_id: standing.season_id,
+        team_id: standing.team_id,
+        games_played: standing.games_played,
+        wins: standing.wins,
+        losses: standing.losses,
+        ties: standing.ties,
+        points: standing.points,
+        goals_for: standing.goals_for,
+        goals_against: standing.goals_against,
+        goal_differential: standing.goal_differential,
+        streak: calculateStreak(standing.recent_results),
+      });
+    }
+
+    // 7. Persist standings to database using transaction
+    await standingsRepository.upsertStandings(standingsData);
+    
+    // Emit metric for standings calculation duration
+    const duration = Date.now() - startTime;
+    await emitStandingsCalculationDuration(tenantId, seasonId, duration);
+  } catch (error) {
+    // Emit metric even on error
+    const duration = Date.now() - startTime;
+    await emitStandingsCalculationDuration(tenantId, seasonId, duration);
+    throw error;
+  }
 }
