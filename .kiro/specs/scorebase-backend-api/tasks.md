@@ -290,7 +290,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - GET /v1/seasons/{seasonId}/standings → StandingsService.getStandingsBySeason
     - _Requirements: 14.4, 14.9, 14.13_
   
-  - [~] 9.4 Implement route handlers for teams
+  - [x] 9.4 Implement route handlers for teams
     - GET /v1/leagues/{leagueId}/teams → TeamService.getTeamsByLeague
     - GET /v1/teams/{teamId} → TeamService.getTeamById
     - GET /v1/teams/{teamId}/players → PlayerService.getPlayersByTeam
