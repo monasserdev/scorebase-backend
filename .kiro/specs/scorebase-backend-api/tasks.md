@@ -79,7 +79,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Add getEventsByTenant method using GSI
     - _Requirements: 6.2, 6.3, 6.4, 6.5_
   
-  - [~] 3.3 Create JWT validation middleware
+  - [x] 3.3 Create JWT validation middleware
     - Implement validateJWT function using Cognito public keys
     - Extract tenant_id, user_id, and roles from token claims
     - Handle expired tokens with 401 Unauthorized response

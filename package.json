@@ -36,6 +36,7 @@
     "ajv": "^8.17.1",
     "aws-sdk": "^2.1691.0",
     "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.2.2",
     "pg": "^8.13.1",
     "pg-pool": "^3.7.0",
     "source-map-support": "^0.5.21",
