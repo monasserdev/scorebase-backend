@@ -533,7 +533,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Run contract tests in CI/CD pipeline
     - _Requirements: 14.1-14.13_
   
-  - [ ] 17.7 Document API versioning and deprecation policy
+  - [x] 17.7 Document API versioning and deprecation policy
     - Define API versioning strategy (URL path versioning: /v1/, /v2/)
     - Document breaking vs non-breaking changes
     - Define deprecation timeline (minimum 6 months notice)
