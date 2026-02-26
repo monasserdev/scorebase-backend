@@ -40,7 +40,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Add migration scripts to package.json
     - _Requirements: 12.11_
   
-  - [~] 2.2 Create initial schema migration (V001)
+  - [x] 2.2 Create initial schema migration (V001)
     - Create tenants table with subscription_tier and max_leagues
     - Create leagues table with tenant_id, sport_type, and branding fields
     - Create seasons table with league_id, date range, and is_active flag
