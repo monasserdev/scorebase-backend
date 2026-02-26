@@ -127,7 +127,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 5. Implement repository layer for data access
-  - [~] 5.1 Create LeagueRepository
+  - [x] 5.1 Create LeagueRepository
     - Implement findByTenantId method with tenant isolation
     - Implement findById method with tenant validation
     - Use parameterized queries for SQL injection prevention
@@ -266,7 +266,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Verify standings recalculated correctly
     - _Requirements: 6.2, 6.7, 6.8, 7.1_
 
-- [ ] 8. Checkpoint - Ensure event sourcing and standings work correctly
+- [~] 8. Checkpoint - Ensure event sourcing and standings work correctly
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 9. Implement API Gateway handler and routing
@@ -475,7 +475,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Test error handling and logging
     - _Requirements: 1.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 11.1_
   
-  - [ ] 16.4 Final checkpoint - Ensure all tests pass
+  - [~] 16.4 Final checkpoint - Ensure all tests pass
     - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 17. Frontend integration and API documentation
