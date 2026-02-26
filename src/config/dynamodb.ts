@@ -7,7 +7,8 @@
  * Requirements: 6.2, 6.3, 6.4, 6.5
  */
 
-import { DynamoDB } from 'aws-sdk';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import { loadEnvironmentConfig } from './environment';
 import {
@@ -17,7 +18,7 @@ import {
 } from '../models/event';
 
 // Global DynamoDB client instance for Lambda warm starts
-let dynamodbClient: DynamoDB.DocumentClient | null = null;
+let dynamodbClient: DynamoDBDocumentClient | null = null;
 
 /**
  * TTL duration in days for event retention
@@ -33,10 +34,21 @@ const EVENT_VERSION = '1.0';
  * Get or create the DynamoDB DocumentClient
  * Reuses client across Lambda invocations for performance
  */
-export function getDynamoDBClient(): DynamoDB.DocumentClient {
+export function getDynamoDBClient(): DynamoDBDocumentClient {
   if (!dynamodbClient) {
-    dynamodbClient = new DynamoDB.DocumentClient({
+    const client = new DynamoDBClient({
       region: process.env.AWS_REGION || 'us-east-1',
+    });
+    
+    // Create DocumentClient with marshalling options
+    dynamodbClient = DynamoDBDocumentClient.from(client, {
+      marshallOptions: {
+        removeUndefinedValues: true,
+        convertEmptyValues: false,
+      },
+      unmarshallOptions: {
+        wrapNumbers: false,
+      },
     });
   }
   return dynamodbClient;
@@ -95,12 +107,12 @@ export async function writeEvent(
     ttl,
   };
 
-  await client
-    .put({
+  await client.send(
+    new PutCommand({
       TableName: config.dynamodbTableName,
       Item: event,
     })
-    .promise();
+  );
 
   return event;
 }
@@ -119,8 +131,8 @@ export async function getEventsByGame(
   const client = getDynamoDBClient();
   const config = loadEnvironmentConfig();
 
-  const result = await client
-    .query({
+  const result = await client.send(
+    new QueryCommand({
       TableName: config.dynamodbTableName,
       KeyConditionExpression: 'game_id = :game_id',
       FilterExpression: 'tenant_id = :tenant_id',
@@ -130,7 +142,7 @@ export async function getEventsByGame(
       },
       ScanIndexForward: true, // Chronological order (ascending)
     })
-    .promise();
+  );
 
   return (result.Items || []) as GameEvent[];
 }
@@ -151,7 +163,7 @@ export async function getEventsByTenant(
     throw new Error('tenant_id is required for getEventsByTenant');
   }
 
-  const queryParams: DynamoDB.DocumentClient.QueryInput = {
+  const queryParams: any = {
     TableName: config.dynamodbTableName,
     IndexName: 'tenant-events-index',
     KeyConditionExpression: 'tenant_id = :tenant_id',
@@ -164,14 +176,14 @@ export async function getEventsByTenant(
   // Add date range filtering if provided
   if (params.start_date && params.end_date) {
     queryParams.KeyConditionExpression += ' AND sort_key BETWEEN :start_key AND :end_key';
-    queryParams.ExpressionAttributeValues![':start_key'] = `${params.start_date}#`;
-    queryParams.ExpressionAttributeValues![':end_key'] = `${params.end_date}#\uffff`;
+    queryParams.ExpressionAttributeValues[':start_key'] = `${params.start_date}#`;
+    queryParams.ExpressionAttributeValues[':end_key'] = `${params.end_date}#\uffff`;
   } else if (params.start_date) {
     queryParams.KeyConditionExpression += ' AND sort_key >= :start_key';
-    queryParams.ExpressionAttributeValues![':start_key'] = `${params.start_date}#`;
+    queryParams.ExpressionAttributeValues[':start_key'] = `${params.start_date}#`;
   } else if (params.end_date) {
     queryParams.KeyConditionExpression += ' AND sort_key <= :end_key';
-    queryParams.ExpressionAttributeValues![':end_key'] = `${params.end_date}#\uffff`;
+    queryParams.ExpressionAttributeValues[':end_key'] = `${params.end_date}#\uffff`;
   }
 
   // Add limit if provided
@@ -179,7 +191,7 @@ export async function getEventsByTenant(
     queryParams.Limit = params.limit;
   }
 
-  const result = await client.query(queryParams).promise();
+  const result = await client.send(new QueryCommand(queryParams));
 
   return (result.Items || []) as GameEvent[];
 }

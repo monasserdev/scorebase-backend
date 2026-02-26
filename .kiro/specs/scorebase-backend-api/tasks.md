@@ -300,7 +300,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - GET /v1/players/{playerId} → PlayerService.getPlayerById
     - _Requirements: 14.8_
   
-  - [~] 9.6 Implement route handlers for games
+  - [x] 9.6 Implement route handlers for games
     - GET /v1/games/{gameId} → GameService.getGameById
     - GET /v1/games/{gameId}/events → EventService.getEventsByGame
     - POST /v1/games/{gameId}/events → EventService.createEvent (scorekeeper role required)

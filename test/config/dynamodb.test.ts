@@ -5,7 +5,8 @@
  * Tests event creation, retrieval, and TTL calculation.
  */
 
-import { DynamoDB } from 'aws-sdk';
+import { mockClient } from 'aws-sdk-client-mock';
+import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import {
   writeEvent,
   getEventsByGame,
@@ -15,24 +16,8 @@ import {
 } from '../../src/config/dynamodb';
 import { EventType } from '../../src/models/event';
 
-// Mock AWS SDK
-jest.mock('aws-sdk', () => {
-  const mockPut = jest.fn().mockReturnValue({
-    promise: jest.fn().mockResolvedValue({}),
-  });
-  const mockQuery = jest.fn().mockReturnValue({
-    promise: jest.fn().mockResolvedValue({ Items: [] }),
-  });
-
-  return {
-    DynamoDB: {
-      DocumentClient: jest.fn().mockImplementation(() => ({
-        put: mockPut,
-        query: mockQuery,
-      })),
-    },
-  };
-});
+// Create mock for DynamoDB DocumentClient
+const ddbMock = mockClient(DynamoDBDocumentClient);
 
 // Mock environment config
 jest.mock('../../src/config/environment', () => ({
@@ -48,6 +33,7 @@ jest.mock('uuid', () => ({
 
 describe('DynamoDB Client Module', () => {
   beforeEach(() => {
+    ddbMock.reset();
     jest.clearAllMocks();
     resetDynamoDBClient();
     // Mock Date for consistent timestamps
@@ -64,19 +50,19 @@ describe('DynamoDB Client Module', () => {
     it('should create and return a DynamoDB DocumentClient', () => {
       const client = getDynamoDBClient();
       expect(client).toBeDefined();
-      expect(DynamoDB.DocumentClient).toHaveBeenCalled();
     });
 
     it('should reuse the same client instance across calls', () => {
       const client1 = getDynamoDBClient();
       const client2 = getDynamoDBClient();
       expect(client1).toBe(client2);
-      expect(DynamoDB.DocumentClient).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('writeEvent', () => {
     it('should write event to DynamoDB with correct structure', async () => {
+      ddbMock.on(PutCommand).resolves({});
+
       const params = {
         game_id: 'game-123',
         tenant_id: 'tenant-456',
@@ -108,15 +94,17 @@ describe('DynamoDB Client Module', () => {
       expect(event.metadata).toEqual(params.metadata);
       expect(event.ttl).toBeGreaterThan(0);
 
-      // Verify DynamoDB put was called
-      const client = getDynamoDBClient();
-      expect(client.put).toHaveBeenCalledWith({
+      // Verify DynamoDB PutCommand was called
+      expect(ddbMock.commandCalls(PutCommand).length).toBe(1);
+      expect(ddbMock.commandCalls(PutCommand)[0].args[0].input).toEqual({
         TableName: 'test-events-table',
         Item: event,
       });
     });
 
     it('should calculate TTL as 90 days from now', async () => {
+      ddbMock.on(PutCommand).resolves({});
+
       const now = new Date('2024-01-15T10:30:00.000Z');
       const expectedTTL = Math.floor(
         new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).getTime() / 1000
@@ -140,6 +128,8 @@ describe('DynamoDB Client Module', () => {
     });
 
     it('should create sort key with occurred_at and event_id', async () => {
+      ddbMock.on(PutCommand).resolves({});
+
       const params = {
         game_id: 'game-123',
         tenant_id: 'tenant-456',
@@ -178,15 +168,13 @@ describe('DynamoDB Client Module', () => {
         },
       ];
 
-      const client = getDynamoDBClient();
-      (client.query as jest.Mock).mockReturnValue({
-        promise: jest.fn().mockResolvedValue({ Items: mockEvents }),
-      });
+      ddbMock.on(QueryCommand).resolves({ Items: mockEvents });
 
       const events = await getEventsByGame('game-123', 'tenant-456');
 
       expect(events).toEqual(mockEvents);
-      expect(client.query).toHaveBeenCalledWith({
+      expect(ddbMock.commandCalls(QueryCommand).length).toBe(1);
+      expect(ddbMock.commandCalls(QueryCommand)[0].args[0].input).toEqual({
         TableName: 'test-events-table',
         KeyConditionExpression: 'game_id = :game_id',
         FilterExpression: 'tenant_id = :tenant_id',
@@ -212,10 +200,7 @@ describe('DynamoDB Client Module', () => {
         },
       ];
 
-      const client = getDynamoDBClient();
-      (client.query as jest.Mock).mockReturnValue({
-        promise: jest.fn().mockResolvedValue({ Items: mockEvents }),
-      });
+      ddbMock.on(QueryCommand).resolves({ Items: mockEvents });
 
       const events = await getEventsByGame('game-123', 'tenant-456');
 
@@ -224,10 +209,7 @@ describe('DynamoDB Client Module', () => {
     });
 
     it('should return empty array when no events found', async () => {
-      const client = getDynamoDBClient();
-      (client.query as jest.Mock).mockReturnValue({
-        promise: jest.fn().mockResolvedValue({ Items: undefined }),
-      });
+      ddbMock.on(QueryCommand).resolves({ Items: undefined });
 
       const events = await getEventsByGame('game-123', 'tenant-456');
 
@@ -246,15 +228,13 @@ describe('DynamoDB Client Module', () => {
         },
       ];
 
-      const client = getDynamoDBClient();
-      (client.query as jest.Mock).mockReturnValue({
-        promise: jest.fn().mockResolvedValue({ Items: mockEvents }),
-      });
+      ddbMock.on(QueryCommand).resolves({ Items: mockEvents });
 
       const events = await getEventsByTenant({ tenant_id: 'tenant-456' });
 
       expect(events).toEqual(mockEvents);
-      expect(client.query).toHaveBeenCalledWith({
+      expect(ddbMock.commandCalls(QueryCommand).length).toBe(1);
+      expect(ddbMock.commandCalls(QueryCommand)[0].args[0].input).toEqual({
         TableName: 'test-events-table',
         IndexName: 'tenant-events-index',
         KeyConditionExpression: 'tenant_id = :tenant_id',
@@ -272,10 +252,7 @@ describe('DynamoDB Client Module', () => {
     });
 
     it('should support date range filtering', async () => {
-      const client = getDynamoDBClient();
-      (client.query as jest.Mock).mockReturnValue({
-        promise: jest.fn().mockResolvedValue({ Items: [] }),
-      });
+      ddbMock.on(QueryCommand).resolves({ Items: [] });
 
       await getEventsByTenant({
         tenant_id: 'tenant-456',
@@ -283,7 +260,7 @@ describe('DynamoDB Client Module', () => {
         end_date: '2024-01-31T23:59:59.999Z',
       });
 
-      expect(client.query).toHaveBeenCalledWith({
+      expect(ddbMock.commandCalls(QueryCommand)[0].args[0].input).toEqual({
         TableName: 'test-events-table',
         IndexName: 'tenant-events-index',
         KeyConditionExpression:
@@ -298,17 +275,14 @@ describe('DynamoDB Client Module', () => {
     });
 
     it('should support start_date only filtering', async () => {
-      const client = getDynamoDBClient();
-      (client.query as jest.Mock).mockReturnValue({
-        promise: jest.fn().mockResolvedValue({ Items: [] }),
-      });
+      ddbMock.on(QueryCommand).resolves({ Items: [] });
 
       await getEventsByTenant({
         tenant_id: 'tenant-456',
         start_date: '2024-01-01T00:00:00.000Z',
       });
 
-      expect(client.query).toHaveBeenCalledWith({
+      expect(ddbMock.commandCalls(QueryCommand)[0].args[0].input).toEqual({
         TableName: 'test-events-table',
         IndexName: 'tenant-events-index',
         KeyConditionExpression: 'tenant_id = :tenant_id AND sort_key >= :start_key',
@@ -321,17 +295,14 @@ describe('DynamoDB Client Module', () => {
     });
 
     it('should support end_date only filtering', async () => {
-      const client = getDynamoDBClient();
-      (client.query as jest.Mock).mockReturnValue({
-        promise: jest.fn().mockResolvedValue({ Items: [] }),
-      });
+      ddbMock.on(QueryCommand).resolves({ Items: [] });
 
       await getEventsByTenant({
         tenant_id: 'tenant-456',
         end_date: '2024-01-31T23:59:59.999Z',
       });
 
-      expect(client.query).toHaveBeenCalledWith({
+      expect(ddbMock.commandCalls(QueryCommand)[0].args[0].input).toEqual({
         TableName: 'test-events-table',
         IndexName: 'tenant-events-index',
         KeyConditionExpression: 'tenant_id = :tenant_id AND sort_key <= :end_key',
@@ -344,17 +315,14 @@ describe('DynamoDB Client Module', () => {
     });
 
     it('should support limit parameter', async () => {
-      const client = getDynamoDBClient();
-      (client.query as jest.Mock).mockReturnValue({
-        promise: jest.fn().mockResolvedValue({ Items: [] }),
-      });
+      ddbMock.on(QueryCommand).resolves({ Items: [] });
 
       await getEventsByTenant({
         tenant_id: 'tenant-456',
         limit: 50,
       });
 
-      expect(client.query).toHaveBeenCalledWith({
+      expect(ddbMock.commandCalls(QueryCommand)[0].args[0].input).toEqual({
         TableName: 'test-events-table',
         IndexName: 'tenant-events-index',
         KeyConditionExpression: 'tenant_id = :tenant_id',
