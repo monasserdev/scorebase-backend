@@ -453,7 +453,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 15.7, 15.10_
 
 - [ ] 16. Final checkpoint and deployment
-  - [ ] 16.1 Run complete test suite
+  - [x] 16.1 Run complete test suite
     - Run all unit tests
     - Run all property-based tests
     - Run all integration tests
