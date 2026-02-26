@@ -144,7 +144,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Implement findById method with tenant validation
     - _Requirements: 4.1, 4.2_
   
-  - [~] 5.4 Create PlayerRepository
+  - [x] 5.4 Create PlayerRepository
     - Implement findByTeamId method with tenant isolation
     - Implement findById method with tenant validation
     - _Requirements: 4.3, 4.4_
