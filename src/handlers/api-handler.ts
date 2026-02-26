@@ -9,16 +9,12 @@
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { validateJWT } from '../middleware/jwt-validation';
-import { AuthError } from '../models/auth';
-import { NotFoundError, BadRequestError, ForbiddenError, ServiceUnavailableError } from '../models/errors';
+import { handleError } from '../middleware/error-handler';
+import { BadRequestError } from '../models/errors';
 import {
   successResponse,
-  authenticationErrorResponse,
   authorizationErrorResponse,
   notFoundErrorResponse,
-  validationErrorResponse,
-  internalErrorResponse,
-  serviceUnavailableErrorResponse,
   generateRequestId,
 } from '../utils/response-formatter';
 import { HttpStatus } from '../models/response';
@@ -501,50 +497,12 @@ export async function handler(
   } catch (error) {
     const latencyMs = Date.now() - startTime;
 
-    // Handle authentication errors (401)
-    if (error instanceof AuthError) {
-      logRequest(requestId, method, path, 'unknown', 'unknown', 401, latencyMs);
-      return authenticationErrorResponse(error.message, requestId);
-    }
-
-    // Handle authorization errors (403)
-    if (error instanceof ForbiddenError) {
-      logRequest(requestId, method, path, 'unknown', 'unknown', 403, latencyMs);
-      return authorizationErrorResponse(error.message, requestId);
-    }
-
-    // Handle not found errors (404)
-    if (error instanceof NotFoundError) {
-      logRequest(requestId, method, path, 'unknown', 'unknown', 404, latencyMs);
-      return notFoundErrorResponse(error.message, requestId);
-    }
-
-    // Handle validation errors (400)
-    if (error instanceof BadRequestError) {
-      logRequest(requestId, method, path, 'unknown', 'unknown', 400, latencyMs);
-      return validationErrorResponse(error.message, (error as any).details, requestId);
-    }
-
-    // Handle service unavailable errors (503)
-    if (error instanceof ServiceUnavailableError) {
-      logRequest(requestId, method, path, 'unknown', 'unknown', 503, latencyMs);
-      return serviceUnavailableErrorResponse(error.message, requestId);
-    }
-
-    // Handle database connection errors (503)
-    if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
-      logRequest(requestId, method, path, 'unknown', 'unknown', 503, latencyMs);
-      return serviceUnavailableErrorResponse('Database connection failed', requestId);
-    }
-
-    // Handle generic errors (500)
-    console.error('Unhandled error:', error);
-    logRequest(requestId, method, path, 'unknown', 'unknown', 500, latencyMs);
+    // Use centralized error handling middleware
+    const errorResponse = handleError(error, requestId);
     
-    return internalErrorResponse(
-      'Internal server error',
-      process.env.NODE_ENV === 'development' ? { error: String(error) } : undefined,
-      requestId
-    );
+    // Log error request
+    logRequest(requestId, method, path, 'unknown', 'unknown', errorResponse.statusCode, latencyMs);
+    
+    return errorResponse;
   }
 }
