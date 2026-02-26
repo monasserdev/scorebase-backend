@@ -219,7 +219,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Apply event to game state in RDS
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.7, 6.8, 6.9, 14.11, 14.12_
   
-  - [~] 7.3 Implement applyEventToGame function
+  - [x] 7.3 Implement applyEventToGame function
     - Handle GOAL_SCORED: increment appropriate team score
     - Handle GAME_STARTED: set status to 'live'
     - Handle GAME_FINALIZED: set status to 'final'

@@ -393,3 +393,246 @@ This module satisfies the following requirements:
 - **6.6**: Support for all event types (GAME_STARTED, GOAL_SCORED, etc.)
 - **8.6**: Return 400 Bad Request with INVALID_EVENT_PAYLOAD code
 - **10.5**: Input validation using JSON schema validation
+
+## Apply Event to Game
+
+The apply event to game module updates game state in RDS based on event type using database transactions.
+
+### Features
+
+- **Transaction Support**: All updates use database transactions for atomicity
+- **Multi-Tenant Isolation**: Validates game belongs to tenant before applying changes
+- **Event Type Handlers**: Specialized handlers for each event type
+- **Error Handling**: Proper error types for not found and validation errors
+- **Idempotent Updates**: Safe to retry failed operations
+
+### Supported Event Types
+
+- `GOAL_SCORED`: Increments home or away team score
+- `GAME_STARTED`: Sets game status to 'live'
+- `GAME_FINALIZED`: Sets status to 'final' and updates final scores
+- `GAME_CANCELLED`: Sets game status to 'cancelled'
+- `PENALTY_ASSESSED`: No game state changes (event logged only)
+- `PERIOD_ENDED`: No game state changes (event logged only)
+- `SCORE_CORRECTED`: No game state changes (event logged only)
+
+### Usage
+
+#### Apply Event to Game
+
+```typescript
+import { applyEventToGame } from '../utils/apply-event-to-game';
+import { GameEvent, EventType } from '../models/event';
+
+// After persisting event to DynamoDB, apply to game state
+const event: GameEvent = {
+  event_id: 'event-123',
+  game_id: 'game-456',
+  tenant_id: 'tenant-789',
+  event_type: EventType.GOAL_SCORED,
+  event_version: '1.0',
+  occurred_at: new Date().toISOString(),
+  sort_key: `${new Date().toISOString()}#event-123`,
+  payload: {
+    team_id: 'team-home',
+    player_id: 'player-1',
+    period: 1,
+    time_remaining: '10:00'
+  },
+  metadata: {
+    user_id: 'user-1',
+    source: 'mobile-app'
+  },
+  ttl: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60
+};
+
+try {
+  await applyEventToGame(tenantId, gameId, event);
+  // Game state updated successfully
+} catch (error) {
+  if (error instanceof NotFoundError) {
+    // Game not found or doesn't belong to tenant
+  } else if (error instanceof BadRequestError) {
+    // Invalid event data (e.g., team not part of game)
+  }
+}
+```
+
+### Event Handlers
+
+#### GOAL_SCORED Handler
+
+Increments the appropriate team's score:
+
+```sql
+-- If home team scored
+UPDATE games
+SET home_score = home_score + 1,
+    updated_at = NOW()
+WHERE id = $1
+
+-- If away team scored
+UPDATE games
+SET away_score = away_score + 1,
+    updated_at = NOW()
+WHERE id = $1
+```
+
+Validates that the team_id in the event payload matches either home_team_id or away_team_id.
+
+#### GAME_STARTED Handler
+
+Sets game status to 'live':
+
+```sql
+UPDATE games
+SET status = 'live',
+    updated_at = NOW()
+WHERE id = $1
+```
+
+#### GAME_FINALIZED Handler
+
+Sets status to 'final' and updates final scores:
+
+```sql
+UPDATE games
+SET status = 'final',
+    home_score = $1,
+    away_score = $2,
+    updated_at = NOW()
+WHERE id = $3
+```
+
+Uses final_home_score and final_away_score from event payload.
+
+#### GAME_CANCELLED Handler
+
+Sets game status to 'cancelled':
+
+```sql
+UPDATE games
+SET status = 'cancelled',
+    updated_at = NOW()
+WHERE id = $1
+```
+
+### Transaction Flow
+
+1. **Begin Transaction**: Start database transaction
+2. **Verify Game**: Check game exists and belongs to tenant
+3. **Apply Event**: Execute event-specific update
+4. **Commit**: Commit transaction if successful
+5. **Rollback**: Rollback on any error
+
+```typescript
+await transaction(async (client: PoolClient) => {
+  // Verify game exists and belongs to tenant
+  const gameCheck = await client.query(
+    `SELECT g.id, g.status, g.home_team_id, g.away_team_id
+     FROM games g
+     INNER JOIN seasons s ON g.season_id = s.id
+     INNER JOIN leagues l ON s.league_id = l.id
+     WHERE l.tenant_id = $1 AND g.id = $2`,
+    [tenantId, gameId]
+  );
+
+  if (gameCheck.rows.length === 0) {
+    throw new NotFoundError(`Game not found: ${gameId}`);
+  }
+
+  // Apply event-specific update
+  // ...
+});
+```
+
+### Error Handling
+
+#### NotFoundError (404)
+
+Thrown when:
+- Game does not exist
+- Game does not belong to tenant (multi-tenant isolation)
+
+```typescript
+throw new NotFoundError(`Game not found: ${gameId}`);
+```
+
+#### BadRequestError (400)
+
+Thrown when:
+- Team in GOAL_SCORED event is not part of the game
+
+```typescript
+throw new BadRequestError(`Team ${team_id} is not part of game ${gameId}`);
+```
+
+### Multi-Tenant Isolation
+
+All game lookups enforce tenant isolation by joining through seasons and leagues:
+
+```sql
+SELECT g.*
+FROM games g
+INNER JOIN seasons s ON g.season_id = s.id
+INNER JOIN leagues l ON s.league_id = l.id
+WHERE l.tenant_id = $1 AND g.id = $2
+```
+
+This ensures:
+- Games can only be updated by their owning tenant
+- Cross-tenant access attempts fail with NotFoundError
+- No direct tenant_id column needed on games table
+
+### Testing
+
+Comprehensive unit tests are available in `test/utils/apply-event-to-game.test.ts`.
+
+Run tests:
+
+```bash
+npm test -- test/utils/apply-event-to-game.test.ts
+```
+
+Test coverage includes:
+- GOAL_SCORED for home and away teams
+- GAME_STARTED status update
+- GAME_FINALIZED with final scores
+- GAME_CANCELLED status update
+- PENALTY_ASSESSED (no state change)
+- PERIOD_ENDED (no state change)
+- Game not found error
+- Team not part of game error
+- Multi-tenant isolation
+
+### Requirements
+
+This module satisfies the following requirements:
+
+- **6.7**: GOAL_SCORED events increment appropriate team score
+- **6.8**: GAME_FINALIZED events set status to 'final'
+- **6.8**: GAME_STARTED events set status to 'live'
+- **6.8**: GAME_CANCELLED events set status to 'cancelled'
+- **9.4**: Use database transactions for atomic updates
+- **2.1**: Enforce multi-tenant isolation on all queries
+
+### Integration
+
+This function is called by EventService after persisting events to DynamoDB:
+
+```typescript
+// In EventService.createEvent()
+// 1. Validate event payload
+validateEventPayload(event_type, payload);
+
+// 2. Persist event to DynamoDB
+await dynamoClient.writeEvent(event);
+
+// 3. Apply event to game state in RDS
+await applyEventToGame(tenantId, gameId, event);
+
+// 4. Trigger standings recalculation if needed
+if (event_type === EventType.GAME_FINALIZED) {
+  await recalculateStandings(tenantId, seasonId);
+}
+```
