@@ -133,7 +133,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Use parameterized queries for SQL injection prevention
     - _Requirements: 3.1, 3.2, 10.3_
   
-  - [~] 5.2 Create SeasonRepository
+  - [x] 5.2 Create SeasonRepository
     - Implement findByLeagueId method with tenant isolation
     - Implement findById method with tenant validation
     - Add query for active seasons (is_active = true)
