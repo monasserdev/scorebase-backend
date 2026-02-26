@@ -65,7 +65,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 12.12_
 
 - [ ] 3. Implement core utilities and middleware
-  - [~] 3.1 Create database connection pool module
+  - [x] 3.1 Create database connection pool module
     - Implement PostgreSQL connection pool with pg-pool (min 5, max 20)
     - Add connection reuse across Lambda invocations
     - Add query helper with parameterized query support
