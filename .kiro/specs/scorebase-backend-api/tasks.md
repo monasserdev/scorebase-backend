@@ -186,7 +186,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Implement getTeamById method with 404 handling
     - _Requirements: 4.1, 4.2, 14.5, 14.6_
   
-  - [~] 6.4 Create PlayerService
+  - [x] 6.4 Create PlayerService
     - Implement getPlayersByTeam method using PlayerRepository
     - Implement getPlayerById method with 404 handling
     - _Requirements: 4.3, 4.4, 14.7, 14.8_
