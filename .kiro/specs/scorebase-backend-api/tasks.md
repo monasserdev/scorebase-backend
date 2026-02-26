@@ -371,7 +371,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Configure AWS credentials from GitHub secrets
     - _Requirements: 12.12_
   
-  - [ ] 12.2 Add deployment scripts to package.json
+  - [x] 12.2 Add deployment scripts to package.json
     - Add script for running database migrations
     - Add script for CDK synthesis
     - Add script for CDK deployment

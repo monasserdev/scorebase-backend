@@ -9,9 +9,12 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:all": "npm run lint && npm run test:coverage",
     "cdk": "cdk",
     "cdk:synth": "cdk synth",
     "cdk:deploy": "cdk deploy",
+    "cdk:deploy:staging": "cdk deploy --context environment=staging",
+    "cdk:deploy:production": "cdk deploy --context environment=production --require-approval never",
     "cdk:diff": "cdk diff",
     "cdk:destroy": "cdk destroy",
     "lint": "eslint . --ext .ts",
@@ -20,7 +23,11 @@
     "migrate:up": "node-pg-migrate up",
     "migrate:down": "node-pg-migrate down",
     "migrate:status": "node-pg-migrate status",
-    "migrate:redo": "node-pg-migrate redo"
+    "migrate:redo": "node-pg-migrate redo",
+    "deploy": "npm run build && npm run cdk:synth && npm run cdk:deploy",
+    "deploy:staging": "npm run build && npm run cdk:synth && npm run cdk:deploy:staging && npm run migrate:up",
+    "deploy:production": "npm run test:all && npm run build && npm run cdk:synth && npm run cdk:deploy:production && npm run migrate:up",
+    "predeploy": "npm run test:all"
   },
   "keywords": [
     "sports",
