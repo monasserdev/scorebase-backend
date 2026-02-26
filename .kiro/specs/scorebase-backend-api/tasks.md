@@ -306,7 +306,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - POST /v1/games/{gameId}/events → EventService.createEvent (scorekeeper role required)
     - _Requirements: 14.10, 14.11, 14.12_
   
-  - [~] 9.7 Implement role-based authorization checks
+  - [x] 9.7 Implement role-based authorization checks
     - Check user roles from JWT claims
     - Enforce scorekeeper role for POST /v1/games/{gameId}/events
     - Return 403 Forbidden for unauthorized actions
