@@ -1,0 +1,180 @@
+{
+  "consumer": "ScoreBase-iOS",
+  "provider": "ScoreBase-Backend-API",
+  "version": "1.0.0",
+  "description": "Contract for error responses",
+  "interactions": [
+    {
+      "id": "error-401",
+      "description": "Unauthorized error response",
+      "request": {
+        "method": "GET",
+        "path": "/v1/leagues"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "type": "object",
+          "required": ["error"],
+          "properties": {
+            "error": {
+              "type": "object",
+              "required": ["code", "message", "request_id"],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "const": "UNAUTHORIZED"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "request_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "details": {
+                  "type": ["object", "null"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "error-404",
+      "description": "Not found error response",
+      "request": {
+        "method": "GET",
+        "path": "/v1/leagues/{leagueId}",
+        "headers": {
+          "Authorization": "Bearer <JWT_TOKEN>"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "type": "object",
+          "required": ["error"],
+          "properties": {
+            "error": {
+              "type": "object",
+              "required": ["code", "message", "request_id"],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "const": "NOT_FOUND"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "request_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "details": {
+                  "type": ["object", "null"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "error-403",
+      "description": "Forbidden error response",
+      "request": {
+        "method": "POST",
+        "path": "/v1/games/{gameId}/events",
+        "headers": {
+          "Authorization": "Bearer <JWT_TOKEN>"
+        }
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "type": "object",
+          "required": ["error"],
+          "properties": {
+            "error": {
+              "type": "object",
+              "required": ["code", "message", "request_id"],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "const": "FORBIDDEN"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "request_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "details": {
+                  "type": ["object", "null"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "error-400",
+      "description": "Validation error response",
+      "request": {
+        "method": "POST",
+        "path": "/v1/games/{gameId}/events",
+        "headers": {
+          "Authorization": "Bearer <JWT_TOKEN>"
+        },
+        "body": {
+          "event_type": "INVALID_TYPE"
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "type": "object",
+          "required": ["error"],
+          "properties": {
+            "error": {
+              "type": "object",
+              "required": ["code", "message", "request_id"],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "const": "VALIDATION_ERROR"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "request_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "details": {
+                  "type": ["object", "null"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

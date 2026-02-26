@@ -525,7 +525,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Verify multi-tenant isolation (no cross-tenant data visible)
     - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.5-8.8_
   
-  - [ ] 17.6 Create API contract tests
+  - [x] 17.6 Create API contract tests
     - Implement contract tests using Pact or similar framework
     - Define consumer contracts from iOS app perspective
     - Verify backend responses match iOS app expectations

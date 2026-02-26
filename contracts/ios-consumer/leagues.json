@@ -1,0 +1,175 @@
+{
+  "consumer": "ScoreBase-iOS",
+  "provider": "ScoreBase-Backend-API",
+  "version": "1.0.0",
+  "description": "Contract for leagues endpoints",
+  "interactions": [
+    {
+      "id": "get-leagues",
+      "description": "Get all leagues for authenticated tenant",
+      "request": {
+        "method": "GET",
+        "path": "/v1/leagues",
+        "headers": {
+          "Authorization": "Bearer <JWT_TOKEN>",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "type": "object",
+          "required": ["request_id", "timestamp", "data"],
+          "properties": {
+            "request_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "league_id",
+                  "tenant_id",
+                  "name",
+                  "sport_type",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "league_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "tenant_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "sport_type": {
+                    "type": "string",
+                    "enum": ["basketball", "soccer", "hockey", "baseball", "football"]
+                  },
+                  "logo_url": {
+                    "type": ["string", "null"],
+                    "format": "uri"
+                  },
+                  "primary_color": {
+                    "type": ["string", "null"],
+                    "pattern": "^#[0-9A-Fa-f]{6}$"
+                  },
+                  "secondary_color": {
+                    "type": ["string", "null"],
+                    "pattern": "^#[0-9A-Fa-f]{6}$"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "get-league-by-id",
+      "description": "Get a single league by ID",
+      "request": {
+        "method": "GET",
+        "path": "/v1/leagues/{leagueId}",
+        "headers": {
+          "Authorization": "Bearer <JWT_TOKEN>",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "type": "object",
+          "required": ["request_id", "timestamp", "data"],
+          "properties": {
+            "request_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "data": {
+              "type": "object",
+              "required": [
+                "league_id",
+                "tenant_id",
+                "name",
+                "sport_type",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "league_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "tenant_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255
+                },
+                "sport_type": {
+                  "type": "string",
+                  "enum": ["basketball", "soccer", "hockey", "baseball", "football"]
+                },
+                "logo_url": {
+                  "type": ["string", "null"],
+                  "format": "uri"
+                },
+                "primary_color": {
+                  "type": ["string", "null"],
+                  "pattern": "^#[0-9A-Fa-f]{6}$"
+                },
+                "secondary_color": {
+                  "type": ["string", "null"],
+                  "pattern": "^#[0-9A-Fa-f]{6}$"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
