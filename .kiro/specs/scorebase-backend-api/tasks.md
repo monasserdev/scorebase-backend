@@ -278,7 +278,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Log all requests to CloudWatch with request_id, tenant_id, user_id
     - _Requirements: 8.1, 8.2, 11.1_
   
-  - [~] 9.2 Implement route handlers for leagues
+  - [x] 9.2 Implement route handlers for leagues
     - GET /v1/leagues → LeagueService.getLeagues
     - GET /v1/leagues/{leagueId} → LeagueService.getLeagueById
     - GET /v1/leagues/{leagueId}/seasons → SeasonService.getSeasonsByLeague
