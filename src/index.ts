@@ -6,6 +6,9 @@
  */
 
 export * from './config/environment';
+export * from './config/database';
+export * from './config/dynamodb';
+export * from './models/event';
 
 // Placeholder for Lambda handler
 // Will be implemented in task 9.1

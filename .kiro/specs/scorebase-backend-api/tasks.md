@@ -72,7 +72,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Add transaction helper for atomic operations
     - _Requirements: 9.4, 10.3_
   
-  - [~] 3.2 Create DynamoDB client module
+  - [x] 3.2 Create DynamoDB client module
     - Implement DynamoDB client wrapper for event operations
     - Add writeEvent method with TTL calculation (90 days)
     - Add getEventsByGame method with chronological ordering
