@@ -515,7 +515,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Update caching strategy to work with backend response format
     - _Requirements: 8.1, 8.2, 8.9_
   
-  - [ ] 17.5 Implement end-to-end integration tests
+  - [x] 17.5 Implement end-to-end integration tests
     - Test iOS app authentication flow with deployed Cognito
     - Test fetching leagues, seasons, teams, players from backend
     - Test creating games and submitting events from iOS app
