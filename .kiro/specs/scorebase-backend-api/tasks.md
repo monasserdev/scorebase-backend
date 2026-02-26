@@ -506,7 +506,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Include rate limiting guidance (1000 req/sec per tenant)
     - _Requirements: 1.1, 1.2, 8.1, 8.2, 9.9_
   
-  - [ ] 17.4 Update iOS ScoreBaseAPIClient with backend endpoints
+  - [x] 17.4 Update iOS ScoreBaseAPIClient with backend endpoints
     - Update base URL configuration in core-networking package
     - Implement authentication with Cognito JWT tokens
     - Update DTOs to match backend response formats
