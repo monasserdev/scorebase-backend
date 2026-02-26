@@ -345,14 +345,14 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 8.5, 8.6, 8.7, 10.11_
 
 - [ ] 11. Implement monitoring and observability
-  - [~] 11.1 Create CloudWatch alarms in CDK stack
+  - [x] 11.1 Create CloudWatch alarms in CDK stack
     - Add alarm for Lambda error rate (threshold: 10 errors in 2 periods)
     - Add alarm for Lambda duration (threshold: 3000ms in 3 periods)
     - Add alarm for RDS connection count (threshold: 80 connections in 2 periods)
     - Add alarm for API Gateway 5xx errors
     - _Requirements: 12.8, 12.9, 12.10_
   
-  - [~] 11.2 Add custom CloudWatch metrics
+  - [ ] 11.2 Add custom CloudWatch metrics
     - Emit metric for standings calculation duration
     - Emit metric for event write latency
     - Emit metric for cross-tenant access attempts
@@ -364,14 +364,14 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 12.8, 12.9, 12.10_
 
 - [ ] 12. Implement CI/CD pipeline
-  - [~] 12.1 Create GitHub Actions workflow
+  - [ ] 12.1 Create GitHub Actions workflow
     - Add test job running unit tests and integration tests
     - Add build job compiling TypeScript to JavaScript
     - Add deploy job using AWS CDK
     - Configure AWS credentials from GitHub secrets
     - _Requirements: 12.12_
   
-  - [~] 12.2 Add deployment scripts to package.json
+  - [ ] 12.2 Add deployment scripts to package.json
     - Add script for running database migrations
     - Add script for CDK synthesis
     - Add script for CDK deployment
@@ -385,14 +385,14 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 12.12_
 
 - [ ] 13. Implement security hardening
-  - [~] 13.1 Add input validation at API Gateway
+  - [ ] 13.1 Add input validation at API Gateway
     - Configure JSON schema validation for request bodies
     - Add UUID format validation for path parameters
     - Add date/time format validation for query parameters
     - Add string length limits to prevent DoS
     - _Requirements: 10.4, 10.5, 10.6_
   
-  - [~] 13.2 Configure encryption and secrets management
+  - [ ] 13.2 Configure encryption and secrets management
     - Verify RDS encryption at rest is enabled
     - Verify DynamoDB encryption at rest is enabled
     - Verify S3 encryption at rest is enabled
@@ -400,7 +400,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Grant Lambda permission to read secrets
     - _Requirements: 10.7, 10.8, 10.9, 10.10_
   
-  - [~] 13.3 Configure VPC and network security
+  - [ ] 13.3 Configure VPC and network security
     - Place Lambda in VPC with private subnets
     - Configure security groups for RDS (allow Lambda access only)
     - Use VPC endpoints for AWS service communication
@@ -413,13 +413,13 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 10.3, 10.4, 2.3, 2.4_
 
 - [ ] 14. Implement disaster recovery and backup
-  - [~] 14.1 Configure automated backups in CDK stack
+  - [ ] 14.1 Configure automated backups in CDK stack
     - Enable automated daily backups for RDS (7-day retention)
     - Enable point-in-time recovery for DynamoDB (35-day retention)
     - Enable versioning for S3 event archive bucket
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
   
-  - [~] 14.2 Create backup and restore documentation
+  - [ ] 14.2 Create backup and restore documentation
     - Document RDS snapshot restoration procedure
     - Document DynamoDB point-in-time recovery procedure
     - Document event replay from S3 archive procedure
@@ -433,14 +433,14 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 13.5, 13.6_
 
 - [ ] 15. Implement cost optimization
-  - [~] 15.1 Configure cost-optimized resource settings
+  - [ ] 15.1 Configure cost-optimized resource settings
     - Use Lambda provisioned concurrency only in production (5 instances)
     - Configure DynamoDB on-demand billing mode
     - Add S3 lifecycle policy to transition to Glacier after 365 days
     - Configure CloudWatch Logs retention to 30 days
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6_
   
-  - [~] 15.2 Add cost monitoring and tagging
+  - [ ] 15.2 Add cost monitoring and tagging
     - Tag all resources with environment and feature tags
     - Create cost allocation report in CDK stack
     - Add CloudWatch dashboard for cost metrics
@@ -453,21 +453,21 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 15.7, 15.10_
 
 - [ ] 16. Final checkpoint and deployment
-  - [~] 16.1 Run complete test suite
+  - [ ] 16.1 Run complete test suite
     - Run all unit tests
     - Run all property-based tests
     - Run all integration tests
     - Verify 90% code coverage for business logic
     - _Requirements: 12.12_
   
-  - [~] 16.2 Deploy to staging environment
+  - [ ] 16.2 Deploy to staging environment
     - Run database migrations
     - Deploy CDK stack to staging
     - Verify all endpoints are accessible
     - Verify monitoring and alarms are active
     - _Requirements: 12.1, 12.11_
   
-  - [~] 16.3 Perform smoke tests in staging
+  - [ ] 16.3 Perform smoke tests in staging
     - Test authentication flow with Cognito
     - Test creating and retrieving leagues, teams, players
     - Test creating games and events
@@ -475,11 +475,11 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Test error handling and logging
     - _Requirements: 1.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 11.1_
   
-  - [~] 16.4 Final checkpoint - Ensure all tests pass
+  - [ ] 16.4 Final checkpoint - Ensure all tests pass
     - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 17. Frontend integration and API documentation
-  - [~] 17.1 Generate OpenAPI/Swagger specification
+  - [ ] 17.1 Generate OpenAPI/Swagger specification
     - Create OpenAPI 3.0 specification document for all API endpoints
     - Include request/response schemas with examples
     - Document authentication requirements (JWT Bearer token)
@@ -488,7 +488,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Export specification as JSON and YAML formats
     - _Requirements: 14.1-14.13, 8.1, 8.2_
   
-  - [~] 17.2 Set up API documentation hosting
+  - [ ] 17.2 Set up API documentation hosting
     - Deploy Swagger UI or ReDoc for interactive API documentation
     - Host documentation at /api-docs endpoint or separate subdomain
     - Include "Try it out" functionality for testing endpoints
@@ -496,7 +496,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Document multi-tenant isolation behavior
     - _Requirements: 14.1-14.13_
   
-  - [~] 17.3 Create iOS integration guide
+  - [ ] 17.3 Create iOS integration guide
     - Document API base URL and versioning strategy
     - Provide Cognito User Pool configuration details (pool ID, client ID, region)
     - Document JWT token format and required claims (tenant_id, user_id, roles)
@@ -506,7 +506,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Include rate limiting guidance (1000 req/sec per tenant)
     - _Requirements: 1.1, 1.2, 8.1, 8.2, 9.9_
   
-  - [~] 17.4 Update iOS ScoreBaseAPIClient with backend endpoints
+  - [ ] 17.4 Update iOS ScoreBaseAPIClient with backend endpoints
     - Update base URL configuration in core-networking package
     - Implement authentication with Cognito JWT tokens
     - Update DTOs to match backend response formats
@@ -515,7 +515,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Update caching strategy to work with backend response format
     - _Requirements: 8.1, 8.2, 8.9_
   
-  - [~] 17.5 Implement end-to-end integration tests
+  - [ ] 17.5 Implement end-to-end integration tests
     - Test iOS app authentication flow with deployed Cognito
     - Test fetching leagues, seasons, teams, players from backend
     - Test creating games and submitting events from iOS app
@@ -525,7 +525,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Verify multi-tenant isolation (no cross-tenant data visible)
     - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.5-8.8_
   
-  - [~] 17.6 Create API contract tests
+  - [ ] 17.6 Create API contract tests
     - Implement contract tests using Pact or similar framework
     - Define consumer contracts from iOS app perspective
     - Verify backend responses match iOS app expectations
@@ -533,7 +533,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Run contract tests in CI/CD pipeline
     - _Requirements: 14.1-14.13_
   
-  - [~] 17.7 Document API versioning and deprecation policy
+  - [ ] 17.7 Document API versioning and deprecation policy
     - Define API versioning strategy (URL path versioning: /v1/, /v2/)
     - Document breaking vs non-breaking changes
     - Define deprecation timeline (minimum 6 months notice)
@@ -541,7 +541,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Document backward compatibility guarantees
     - _Requirements: 8.1, 8.2_
   
-  - [~] 17.8 Set up shared API monitoring dashboard
+  - [ ] 17.8 Set up shared API monitoring dashboard
     - Create CloudWatch dashboard visible to iOS team
     - Include API latency metrics (p50, p95, p99)
     - Include error rate metrics by endpoint
@@ -550,7 +550,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Add alerts for iOS team when API issues detected
     - _Requirements: 9.1, 11.1_
   
-  - [~] 17.9 Coordinate iOS app deployment with backend
+  - [ ] 17.9 Coordinate iOS app deployment with backend
     - Verify iOS app works with staging backend
     - Test authentication flow end-to-end
     - Verify all features work with real backend data
