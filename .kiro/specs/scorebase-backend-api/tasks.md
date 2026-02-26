@@ -210,7 +210,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Return 400 Bad Request with field-specific errors for invalid payloads
     - _Requirements: 6.1, 6.6, 8.6, 10.5_
   
-  - [~] 7.2 Create EventService for event operations
+  - [x] 7.2 Create EventService for event operations
     - Implement getEventsByGame method using DynamoDB client
     - Implement createEvent method with validation and persistence
     - Validate game exists and belongs to tenant before creating event
