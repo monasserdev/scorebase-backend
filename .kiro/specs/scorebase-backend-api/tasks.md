@@ -157,7 +157,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Add support for filtering by team (home or away)
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
   
-  - [~] 5.6 Create StandingsRepository
+  - [x] 5.6 Create StandingsRepository
     - Implement findBySeasonId method with ordering by points DESC
     - Implement upsertStandings method with transaction support
     - Use ON CONFLICT for upsert operations
