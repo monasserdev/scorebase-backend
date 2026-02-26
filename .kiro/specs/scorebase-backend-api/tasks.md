@@ -203,7 +203,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 2.1, 8.7_
 
 - [ ] 7. Implement event sourcing and standings calculation
-  - [~] 7.1 Create event validation module
+  - [x] 7.1 Create event validation module
     - Implement validateEventPayload function with schema validation per event_type
     - Add schemas for GAME_STARTED, GOAL_SCORED, PENALTY_ASSESSED, PERIOD_ENDED, GAME_FINALIZED, GAME_CANCELLED, SCORE_CORRECTED
     - Validate required fields and data types using ajv

@@ -208,3 +208,188 @@ This module satisfies the following requirements:
 - **8.3**: UUID generation for request_id
 - **8.4**: ISO-8601 timestamp formatting
 - **8.9**: CORS headers on all responses
+
+## Event Validation
+
+The event validation module provides JSON schema validation for game event payloads using ajv.
+
+### Features
+
+- **Schema Validation**: Validates event payloads against event_type-specific JSON schemas
+- **Field-Specific Errors**: Returns detailed error messages for each invalid field
+- **Type Safety**: Full TypeScript support with typed event payloads
+- **Format Validation**: Validates UUIDs, ISO-8601 timestamps, and custom patterns
+- **Strict Mode**: Rejects additional properties not defined in schemas
+
+### Supported Event Types
+
+- `GAME_STARTED`: Game start event with start_time and optional location
+- `GOAL_SCORED`: Goal event with team, player, period, and time information
+- `PENALTY_ASSESSED`: Penalty event with team, player, penalty type, and duration
+- `PERIOD_ENDED`: Period end event with period number and scores
+- `GAME_FINALIZED`: Game finalization event with final scores
+- `GAME_CANCELLED`: Game cancellation event with reason and timestamp
+- `SCORE_CORRECTED`: Score correction event with team, old/new scores, and reason
+
+### Usage
+
+#### Validate Event Payload
+
+```typescript
+import { validateEventPayload } from '../utils/event-validation';
+import { EventType } from '../models/event';
+
+// Validate GOAL_SCORED event
+const payload = {
+  team_id: '123e4567-e89b-12d3-a456-426614174000',
+  player_id: '223e4567-e89b-12d3-a456-426614174000',
+  assist_player_id: '323e4567-e89b-12d3-a456-426614174000',
+  period: 2,
+  time_remaining: '08:45'
+};
+
+try {
+  validateEventPayload(EventType.GOAL_SCORED, payload);
+  // Payload is valid, proceed with event creation
+} catch (error) {
+  if (error instanceof BadRequestError) {
+    // error.code === 'INVALID_EVENT_PAYLOAD'
+    // error.details contains field-specific errors
+    console.error('Validation failed:', error.details);
+  }
+}
+```
+
+#### Check Event Type Validity
+
+```typescript
+import { isValidEventType } from '../utils/event-validation';
+
+if (isValidEventType(eventType)) {
+  // Event type is valid
+  validateEventPayload(eventType, payload);
+} else {
+  // Unknown event type
+  throw new BadRequestError(`Unknown event type: ${eventType}`);
+}
+```
+
+### Event Schemas
+
+#### GAME_STARTED
+
+```typescript
+{
+  start_time: string;      // ISO-8601 timestamp (required)
+  location?: string;       // Optional location
+}
+```
+
+#### GOAL_SCORED
+
+```typescript
+{
+  team_id: string;         // UUID (required)
+  player_id: string;       // UUID (required)
+  assist_player_id?: string; // UUID (optional)
+  period: number;          // >= 1 (required)
+  time_remaining: string;  // Format: MM:SS (required)
+}
+```
+
+#### PENALTY_ASSESSED
+
+```typescript
+{
+  team_id: string;         // UUID (required)
+  player_id: string;       // UUID (required)
+  penalty_type: string;    // Non-empty (required)
+  duration_minutes: number; // >= 0 (required)
+  period: number;          // >= 1 (required)
+  time_remaining: string;  // Format: MM:SS (required)
+}
+```
+
+#### PERIOD_ENDED
+
+```typescript
+{
+  period: number;          // >= 1 (required)
+  home_score: number;      // >= 0 (required)
+  away_score: number;      // >= 0 (required)
+}
+```
+
+#### GAME_FINALIZED
+
+```typescript
+{
+  final_home_score: number; // >= 0 (required)
+  final_away_score: number; // >= 0 (required)
+}
+```
+
+#### GAME_CANCELLED
+
+```typescript
+{
+  reason: string;          // Non-empty (required)
+  cancelled_at: string;    // ISO-8601 timestamp (required)
+}
+```
+
+#### SCORE_CORRECTED
+
+```typescript
+{
+  team_id: string;         // UUID (required)
+  old_score: number;       // >= 0 (required)
+  new_score: number;       // >= 0 (required)
+  reason: string;          // Non-empty (required)
+}
+```
+
+### Error Response Format
+
+When validation fails, a `BadRequestError` is thrown with the following structure:
+
+```typescript
+{
+  name: 'BadRequestError',
+  message: 'Invalid event payload',
+  code: 'INVALID_EVENT_PAYLOAD',
+  details: {
+    'team_id': 'Invalid format, expected uuid',
+    'period': 'Must be >= 1',
+    'time_remaining': 'Does not match required pattern'
+  }
+}
+```
+
+### Validation Rules
+
+- **Required Fields**: All required fields must be present
+- **Data Types**: Fields must match expected types (string, number, etc.)
+- **Format Validation**: UUIDs and timestamps must be valid formats
+- **Range Validation**: Numeric fields must meet minimum/maximum constraints
+- **Pattern Validation**: String fields must match required patterns (e.g., MM:SS)
+- **Additional Properties**: Extra fields not in schema are rejected
+
+### Testing
+
+Comprehensive unit tests are available in `test/utils/event-validation.test.ts`.
+
+Run tests:
+
+```bash
+npm test -- test/utils/event-validation.test.ts
+```
+
+### Requirements
+
+This module satisfies the following requirements:
+
+- **6.1**: Event payload validation against event_type-specific schemas
+- **6.6**: Support for all event types (GAME_STARTED, GOAL_SCORED, etc.)
+- **8.6**: Return 400 Bad Request with INVALID_EVENT_PAYLOAD code
+- **10.5**: Input validation using JSON schema validation
