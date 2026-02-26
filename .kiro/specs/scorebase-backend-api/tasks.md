@@ -94,7 +94,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Generate tokens with invalid signatures and verify rejection
     - Generate valid tokens and verify claims extraction
   
-  - [~] 3.5 Create multi-tenant isolation middleware
+  - [x] 3.5 Create multi-tenant isolation middleware
     - Implement enforceMultiTenantIsolation query wrapper
     - Validate tenant_id is present in all queries
     - Verify all results belong to requesting tenant
