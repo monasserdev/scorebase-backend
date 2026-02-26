@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Commit & Push After Task",
+  "description": "Automatically commits and pushes changes to git after completing a spec task",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A task was just completed. Please:\n1. Check if there are any uncommitted changes (git status)\n2. If changes exist, stage all changes (git add .)\n3. Create a commit with a descriptive message following conventional commits format (feat:, fix:, etc.)\n4. Include a summary of what was implemented in the commit message\n5. Push the changes to the current branch\n6. Remind the user to create a PR on GitHub if this completes a major milestone\n\nUse the task name and description to generate an appropriate commit message."
+  }
+}
