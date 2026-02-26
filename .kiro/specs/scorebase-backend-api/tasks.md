@@ -16,7 +16,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Create .gitignore for node_modules, dist, cdk.out
     - _Requirements: 12.1, 12.2_
   
-  - [~] 1.2 Define AWS CDK infrastructure stack
+  - [x] 1.2 Define AWS CDK infrastructure stack
     - Create VPC with 2 AZs and 1 NAT gateway
     - Define RDS PostgreSQL instance (db.t3.medium, Multi-AZ, encrypted)
     - Define DynamoDB table with partition key (game_id) and sort key (occurred_at#event_id)
