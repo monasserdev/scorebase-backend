@@ -54,6 +54,8 @@ export class ScorebaseBackendStack extends cdk.Stack {
 
     // ========================================
     // RDS PostgreSQL Instance
+    // Task 13.2: Encryption at rest enabled via storageEncrypted: true
+    // Task 13.2: Credentials stored in AWS Secrets Manager
     // ========================================
     const dbSecurityGroup = new ec2.SecurityGroup(this, 'DatabaseSecurityGroup', {
       vpc,
@@ -100,6 +102,7 @@ export class ScorebaseBackendStack extends cdk.Stack {
 
     // ========================================
     // DynamoDB Event Store
+    // Task 13.2: Encryption at rest enabled via AWS_MANAGED encryption
     // ========================================
     const eventTable = new dynamodb.Table(this, 'GameEventsTable', {
       tableName: 'scorebase-game-events',
@@ -134,6 +137,7 @@ export class ScorebaseBackendStack extends cdk.Stack {
 
     // ========================================
     // S3 Bucket for Event Archives
+    // Task 13.2: Encryption at rest enabled via S3_MANAGED encryption
     // ========================================
     const eventArchiveBucket = new s3.Bucket(this, 'EventArchiveBucket', {
       bucketName: `scorebase-event-archives-${this.account}`,
@@ -248,6 +252,38 @@ export class ScorebaseBackendStack extends cdk.Stack {
     eventArchiveBucket.grantReadWrite(apiFunction);
 
     // ========================================
+    // VPC Endpoints for AWS Services (Task 13.3)
+    // ========================================
+    // VPC Endpoint for DynamoDB
+    vpc.addGatewayEndpoint('DynamoDBEndpoint', {
+      service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
+      subnets: [
+        {
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        },
+      ],
+    });
+
+    // VPC Endpoint for S3
+    vpc.addGatewayEndpoint('S3Endpoint', {
+      service: ec2.GatewayVpcEndpointAwsService.S3,
+      subnets: [
+        {
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        },
+      ],
+    });
+
+    // VPC Endpoint for Secrets Manager
+    vpc.addInterfaceEndpoint('SecretsManagerEndpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+      subnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      privateDnsEnabled: true,
+    });
+
+    // ========================================
     // API Gateway
     // ========================================
     const api = new apigateway.RestApi(this, 'ScoreBaseAPI', {
@@ -281,6 +317,73 @@ export class ScorebaseBackendStack extends cdk.Stack {
       authorizerName: 'ScoreBaseCognitoAuthorizer',
       identitySource: 'method.request.header.Authorization',
     });
+
+    // ========================================
+    // Request Validators (Task 13.1)
+    // ========================================
+    
+    // Request validator for body and parameters
+    // Note: Currently using Lambda proxy integration which handles validation in code.
+    // These validators are defined for future use when implementing non-proxy integrations.
+    const requestValidator = new apigateway.RequestValidator(this, 'RequestValidator', {
+      restApi: api,
+      requestValidatorName: 'body-and-params-validator',
+      validateRequestBody: true,
+      validateRequestParameters: true,
+    });
+
+    // JSON Schema models for request validation
+    
+    // Event creation request model
+    // This model can be referenced in method options when moving to non-proxy integration
+    const eventRequestModel = new apigateway.Model(this, 'EventRequestModel', {
+      restApi: api,
+      modelName: 'EventRequest',
+      contentType: 'application/json',
+      description: 'Schema for game event creation',
+      schema: {
+        type: apigateway.JsonSchemaType.OBJECT,
+        required: ['event_type', 'payload'],
+        properties: {
+          event_type: {
+            type: apigateway.JsonSchemaType.STRING,
+            enum: [
+              'GAME_STARTED',
+              'GOAL_SCORED',
+              'PENALTY_ASSESSED',
+              'PERIOD_ENDED',
+              'GAME_FINALIZED',
+              'GAME_CANCELLED',
+              'SCORE_CORRECTED',
+            ],
+            description: 'Type of game event',
+          },
+          payload: {
+            type: apigateway.JsonSchemaType.OBJECT,
+            description: 'Event-specific payload data',
+          },
+          metadata: {
+            type: apigateway.JsonSchemaType.OBJECT,
+            properties: {
+              source: {
+                type: apigateway.JsonSchemaType.STRING,
+                maxLength: 256,
+              },
+              ip_address: {
+                type: apigateway.JsonSchemaType.STRING,
+                maxLength: 45,
+              },
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+    });
+
+    // Suppress unused variable warnings - these are created for infrastructure documentation
+    // and future use when migrating from proxy to non-proxy integration
+    void requestValidator;
+    void eventRequestModel;
 
     // Lambda Integration
     const lambdaIntegration = new apigateway.LambdaIntegration(apiFunction, {

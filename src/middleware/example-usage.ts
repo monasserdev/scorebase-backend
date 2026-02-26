@@ -230,7 +230,7 @@ export async function updateStandingsWithIsolation(
 ) {
   const { transaction } = await import('../config/database');
 
-  return transaction(async (client) => {
+  return transaction(async (_client) => {
     // All queries within transaction must include tenant_id
     for (const standing of standings) {
       await enforceMultiTenantIsolation(
@@ -289,7 +289,7 @@ export async function getGamesWithTeams(tenantId: string, seasonId: string) {
 }
 
 // Helper function placeholder
-function validateJWT(auth: string, poolId: string, region: string): Promise<any> {
+function validateJWT(_auth: string, _poolId: string, _region: string): Promise<any> {
   throw new Error('Not implemented - see jwt-validation.ts');
 }
 

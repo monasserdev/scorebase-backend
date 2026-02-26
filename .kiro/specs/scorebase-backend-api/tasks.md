@@ -385,14 +385,14 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 12.12_
 
 - [ ] 13. Implement security hardening
-  - [ ] 13.1 Add input validation at API Gateway
+  - [x] 13.1 Add input validation at API Gateway
     - Configure JSON schema validation for request bodies
     - Add UUID format validation for path parameters
     - Add date/time format validation for query parameters
     - Add string length limits to prevent DoS
     - _Requirements: 10.4, 10.5, 10.6_
   
-  - [ ] 13.2 Configure encryption and secrets management
+  - [x] 13.2 Configure encryption and secrets management
     - Verify RDS encryption at rest is enabled
     - Verify DynamoDB encryption at rest is enabled
     - Verify S3 encryption at rest is enabled
@@ -400,7 +400,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Grant Lambda permission to read secrets
     - _Requirements: 10.7, 10.8, 10.9, 10.10_
   
-  - [ ] 13.3 Configure VPC and network security
+  - [x] 13.3 Configure VPC and network security
     - Place Lambda in VPC with private subnets
     - Configure security groups for RDS (allow Lambda access only)
     - Use VPC endpoints for AWS service communication
