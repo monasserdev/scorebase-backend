@@ -8,6 +8,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 
 /**
@@ -26,6 +27,9 @@ import { Construct } from 'constructs';
 export class ScorebaseBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    // Environment detection (default to 'dev' if not specified)
+    const environment = this.node.tryGetContext('environment') || 'dev';
 
     // ========================================
     // VPC with 2 AZs and 1 NAT Gateway
@@ -52,16 +56,25 @@ export class ScorebaseBackendStack extends cdk.Stack {
       ],
     });
 
+    // Task 15.2: Add resource tags
+    cdk.Tags.of(vpc).add('Environment', environment);
+    cdk.Tags.of(vpc).add('Feature', 'networking');
+
     // ========================================
     // RDS PostgreSQL Instance
     // Task 13.2: Encryption at rest enabled via storageEncrypted: true
     // Task 13.2: Credentials stored in AWS Secrets Manager
+    // Task 14.1: Automated daily backups with 7-day retention
     // ========================================
     const dbSecurityGroup = new ec2.SecurityGroup(this, 'DatabaseSecurityGroup', {
       vpc,
       description: 'Security group for RDS PostgreSQL instance',
       allowAllOutbound: false,
     });
+
+    // Task 15.2: Add resource tags
+    cdk.Tags.of(dbSecurityGroup).add('Environment', environment);
+    cdk.Tags.of(dbSecurityGroup).add('Feature', 'database');
 
     // Generate database credentials and store in Secrets Manager
     const dbCredentials = new secretsmanager.Secret(this, 'DBCredentials', {
@@ -92,7 +105,9 @@ export class ScorebaseBackendStack extends cdk.Stack {
       storageEncrypted: true,
       credentials: rds.Credentials.fromSecret(dbCredentials),
       databaseName: 'scorebase',
+      // Task 14.1: Automated daily backups with 7-day retention
       backupRetention: cdk.Duration.days(7),
+      preferredBackupWindow: '03:00-04:00', // Daily backup at 3 AM UTC
       deleteAutomatedBackups: false,
       removalPolicy: cdk.RemovalPolicy.SNAPSHOT,
       deletionProtection: true,
@@ -100,9 +115,15 @@ export class ScorebaseBackendStack extends cdk.Stack {
       performanceInsightRetention: rds.PerformanceInsightRetention.DEFAULT,
     });
 
+    // Task 15.2: Add resource tags
+    cdk.Tags.of(database).add('Environment', environment);
+    cdk.Tags.of(database).add('Feature', 'database');
+
     // ========================================
     // DynamoDB Event Store
     // Task 13.2: Encryption at rest enabled via AWS_MANAGED encryption
+    // Task 14.1: Point-in-time recovery enabled (35-day retention)
+    // Task 15.1: On-demand billing mode for cost optimization
     // ========================================
     const eventTable = new dynamodb.Table(this, 'GameEventsTable', {
       tableName: 'scorebase-game-events',
@@ -114,12 +135,18 @@ export class ScorebaseBackendStack extends cdk.Stack {
         name: 'occurred_at#event_id',
         type: dynamodb.AttributeType.STRING,
       },
+      // Task 15.1: On-demand billing for cost optimization
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      // Task 14.1: Point-in-time recovery with 35-day retention
       pointInTimeRecovery: true,
       timeToLiveAttribute: 'ttl',
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
+
+    // Task 15.2: Add resource tags
+    cdk.Tags.of(eventTable).add('Environment', environment);
+    cdk.Tags.of(eventTable).add('Feature', 'event-store');
 
     // Add GSI for tenant queries
     eventTable.addGlobalSecondaryIndex({
@@ -138,10 +165,13 @@ export class ScorebaseBackendStack extends cdk.Stack {
     // ========================================
     // S3 Bucket for Event Archives
     // Task 13.2: Encryption at rest enabled via S3_MANAGED encryption
+    // Task 14.1: Versioning enabled for backup and recovery
+    // Task 15.1: Lifecycle policy to transition to Glacier after 365 days
     // ========================================
     const eventArchiveBucket = new s3.Bucket(this, 'EventArchiveBucket', {
       bucketName: `scorebase-event-archives-${this.account}`,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      // Task 14.1: Enable versioning for backup and recovery
       versioned: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
@@ -149,6 +179,7 @@ export class ScorebaseBackendStack extends cdk.Stack {
         {
           id: 'TransitionToGlacier',
           enabled: true,
+          // Task 15.1: Transition to Glacier after 365 days for cost optimization
           transitions: [
             {
               storageClass: s3.StorageClass.GLACIER,
@@ -158,6 +189,10 @@ export class ScorebaseBackendStack extends cdk.Stack {
         },
       ],
     });
+
+    // Task 15.2: Add resource tags
+    cdk.Tags.of(eventArchiveBucket).add('Environment', environment);
+    cdk.Tags.of(eventArchiveBucket).add('Feature', 'event-archive');
 
     // ========================================
     // Cognito User Pool
@@ -189,6 +224,10 @@ export class ScorebaseBackendStack extends cdk.Stack {
         }),
       },
     });
+
+    // Task 15.2: Add resource tags
+    cdk.Tags.of(userPool).add('Environment', environment);
+    cdk.Tags.of(userPool).add('Feature', 'authentication');
 
     const userPoolClient = new cognito.UserPoolClient(this, 'ScoreBaseUserPoolClient', {
       userPool,
@@ -231,6 +270,8 @@ export class ScorebaseBackendStack extends cdk.Stack {
       securityGroups: [lambdaSecurityGroup],
       timeout: cdk.Duration.seconds(30),
       memorySize: 1024,
+      // Task 15.1: CloudWatch Logs retention set to 30 days
+      logRetention: logs.RetentionDays.ONE_MONTH,
       environment: {
         NODE_ENV: 'production',
         DB_HOST: database.dbInstanceEndpointAddress,
@@ -245,6 +286,24 @@ export class ScorebaseBackendStack extends cdk.Stack {
         AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       },
     });
+
+    // Task 15.1: Configure provisioned concurrency for production environment only
+    if (environment === 'production') {
+      const version = apiFunction.currentVersion;
+      const alias = new lambda.Alias(this, 'ScoreBaseAPIAlias', {
+        aliasName: 'live',
+        version,
+        provisionedConcurrentExecutions: 5,
+      });
+
+      // Task 15.2: Add resource tags
+      cdk.Tags.of(alias).add('Environment', environment);
+      cdk.Tags.of(alias).add('Feature', 'api');
+    }
+
+    // Task 15.2: Add resource tags
+    cdk.Tags.of(apiFunction).add('Environment', environment);
+    cdk.Tags.of(apiFunction).add('Feature', 'api');
 
     // Grant Lambda permissions
     dbCredentials.grantRead(apiFunction);
@@ -310,6 +369,10 @@ export class ScorebaseBackendStack extends cdk.Stack {
         allowCredentials: true,
       },
     });
+
+    // Task 15.2: Add resource tags
+    cdk.Tags.of(api).add('Environment', environment);
+    cdk.Tags.of(api).add('Feature', 'api-gateway');
 
     // Cognito Authorizer
     const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
@@ -460,6 +523,89 @@ export class ScorebaseBackendStack extends cdk.Stack {
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
+
+    // ========================================
+    // Task 15.2: Cost Monitoring Dashboard
+    // ========================================
+    const costDashboard = new cloudwatch.Dashboard(this, 'CostMonitoringDashboard', {
+      dashboardName: `scorebase-cost-metrics-${environment}`,
+    });
+
+    // Lambda invocations and duration (cost drivers)
+    costDashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'Lambda Invocations',
+        left: [apiFunction.metricInvocations({ statistic: 'Sum', period: cdk.Duration.hours(1) })],
+        width: 12,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'Lambda Duration (GB-seconds)',
+        left: [apiFunction.metricDuration({ statistic: 'Average', period: cdk.Duration.hours(1) })],
+        width: 12,
+      })
+    );
+
+    // DynamoDB consumed capacity
+    costDashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'DynamoDB Read Capacity',
+        left: [
+          eventTable.metricConsumedReadCapacityUnits({
+            statistic: 'Sum',
+            period: cdk.Duration.hours(1),
+          }),
+        ],
+        width: 12,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'DynamoDB Write Capacity',
+        left: [
+          eventTable.metricConsumedWriteCapacityUnits({
+            statistic: 'Sum',
+            period: cdk.Duration.hours(1),
+          }),
+        ],
+        width: 12,
+      })
+    );
+
+    // RDS connections and CPU (cost indicators)
+    costDashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'RDS Database Connections',
+        left: [
+          database.metricDatabaseConnections({
+            statistic: 'Average',
+            period: cdk.Duration.hours(1),
+          }),
+        ],
+        width: 12,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'RDS CPU Utilization',
+        left: [
+          database.metricCPUUtilization({
+            statistic: 'Average',
+            period: cdk.Duration.hours(1),
+          }),
+        ],
+        width: 12,
+      })
+    );
+
+    // API Gateway requests (cost driver)
+    costDashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'API Gateway Requests',
+        left: [api.metricCount({ statistic: 'Sum', period: cdk.Duration.hours(1) })],
+        width: 12,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'API Gateway Latency',
+        left: [api.metricLatency({ statistic: 'Average', period: cdk.Duration.hours(1) })],
+        width: 12,
+      })
+    );
 
     // ========================================
     // Stack Outputs

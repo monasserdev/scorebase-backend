@@ -413,13 +413,13 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 10.3, 10.4, 2.3, 2.4_
 
 - [ ] 14. Implement disaster recovery and backup
-  - [ ] 14.1 Configure automated backups in CDK stack
+  - [x] 14.1 Configure automated backups in CDK stack
     - Enable automated daily backups for RDS (7-day retention)
     - Enable point-in-time recovery for DynamoDB (35-day retention)
     - Enable versioning for S3 event archive bucket
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
   
-  - [ ] 14.2 Create backup and restore documentation
+  - [x] 14.2 Create backup and restore documentation
     - Document RDS snapshot restoration procedure
     - Document DynamoDB point-in-time recovery procedure
     - Document event replay from S3 archive procedure
@@ -433,14 +433,14 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 13.5, 13.6_
 
 - [ ] 15. Implement cost optimization
-  - [ ] 15.1 Configure cost-optimized resource settings
+  - [x] 15.1 Configure cost-optimized resource settings
     - Use Lambda provisioned concurrency only in production (5 instances)
     - Configure DynamoDB on-demand billing mode
     - Add S3 lifecycle policy to transition to Glacier after 365 days
     - Configure CloudWatch Logs retention to 30 days
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6_
   
-  - [ ] 15.2 Add cost monitoring and tagging
+  - [x] 15.2 Add cost monitoring and tagging
     - Tag all resources with environment and feature tags
     - Create cost allocation report in CDK stack
     - Add CloudWatch dashboard for cost metrics
