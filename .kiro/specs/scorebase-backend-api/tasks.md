@@ -227,7 +227,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Use database transactions for atomic updates
     - _Requirements: 6.7, 6.8_
   
-  - [~] 7.4 Implement standings calculation algorithm
+  - [x] 7.4 Implement standings calculation algorithm
     - Create calculateStreak helper function
     - Implement recalculateStandings function
     - Fetch all finalized games for season
