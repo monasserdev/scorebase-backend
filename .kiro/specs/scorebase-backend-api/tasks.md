@@ -252,7 +252,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Call recalculateStandings with tenant_id and season_id
     - _Requirements: 7.1, 7.9_
   
-  - [~] 7.7 Create StandingsService
+  - [x] 7.7 Create StandingsService
     - Implement getStandingsBySeason method using StandingsRepository
     - Return standings ordered by points DESC
     - _Requirements: 7.9, 14.13_
