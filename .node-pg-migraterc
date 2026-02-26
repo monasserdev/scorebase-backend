@@ -1,0 +1,17 @@
+{
+  "database-url-var": "DATABASE_URL",
+  "migrations-dir": "migrations",
+  "migrations-table": "pgmigrations",
+  "migration-file-language": "ts",
+  "dir": "migrations",
+  "check-order": true,
+  "verbose": true,
+  "ignore-pattern": "\\..*",
+  "schema": "public",
+  "decamelize": false,
+  "create-schema": true,
+  "create-migrations-schema": false,
+  "single-transaction": true,
+  "no-lock": false,
+  "timestamp": true
+}

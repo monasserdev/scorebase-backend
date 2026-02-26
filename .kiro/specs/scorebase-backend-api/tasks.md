@@ -34,7 +34,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 12.12_
 
 - [ ] 2. Implement database schema and migrations
-  - [~] 2.1 Create database migration tool setup
+  - [x] 2.1 Create database migration tool setup
     - Install and configure db-migrate or Flyway
     - Create migrations directory structure
     - Add migration scripts to package.json

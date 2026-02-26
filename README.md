@@ -70,6 +70,62 @@ npm test
 npm run test:coverage
 ```
 
+## Database Migrations
+
+The project uses `node-pg-migrate` for database schema management.
+
+### Setup
+
+1. Copy the example environment file:
+```bash
+cp .env.example .env
+```
+
+2. Configure database connection in `.env`:
+```bash
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=scorebase
+DB_USER=postgres
+DB_PASSWORD=your_password_here
+```
+
+### Migration Commands
+
+```bash
+# Create a new migration
+npm run migrate:create -- <migration-name>
+
+# Run pending migrations
+npm run migrate:up
+
+# Rollback last migration
+npm run migrate:down
+
+# Check migration status
+npm run migrate:status
+
+# Redo last migration (rollback + re-apply)
+npm run migrate:redo
+```
+
+### Using the Migration Script
+
+For more control, use the provided shell script:
+
+```bash
+# Run migrations in development
+./scripts/migrate.sh dev up
+
+# Check status in staging
+./scripts/migrate.sh staging status
+
+# Create new migration
+./scripts/migrate.sh dev create add-new-table
+```
+
+See `migrations/README.md` for detailed migration documentation.
+
 ## Development
 
 ```bash

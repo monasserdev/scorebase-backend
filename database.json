@@ -1,0 +1,63 @@
+{
+  "dev": {
+    "driver": "pg",
+    "host": {
+      "ENV": "DB_HOST"
+    },
+    "port": {
+      "ENV": "DB_PORT"
+    },
+    "database": {
+      "ENV": "DB_NAME"
+    },
+    "user": {
+      "ENV": "DB_USER"
+    },
+    "password": {
+      "ENV": "DB_PASSWORD"
+    },
+    "ssl": false
+  },
+  "staging": {
+    "driver": "pg",
+    "host": {
+      "ENV": "DB_HOST"
+    },
+    "port": {
+      "ENV": "DB_PORT"
+    },
+    "database": {
+      "ENV": "DB_NAME"
+    },
+    "user": {
+      "ENV": "DB_USER"
+    },
+    "password": {
+      "ENV": "DB_PASSWORD"
+    },
+    "ssl": {
+      "rejectUnauthorized": false
+    }
+  },
+  "production": {
+    "driver": "pg",
+    "host": {
+      "ENV": "DB_HOST"
+    },
+    "port": {
+      "ENV": "DB_PORT"
+    },
+    "database": {
+      "ENV": "DB_NAME"
+    },
+    "user": {
+      "ENV": "DB_USER"
+    },
+    "password": {
+      "ENV": "DB_PASSWORD"
+    },
+    "ssl": {
+      "rejectUnauthorized": true
+    }
+  }
+}
