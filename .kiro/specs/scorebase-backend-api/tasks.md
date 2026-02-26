@@ -139,7 +139,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Add query for active seasons (is_active = true)
     - _Requirements: 3.3, 3.4_
   
-  - [~] 5.3 Create TeamRepository
+  - [x] 5.3 Create TeamRepository
     - Implement findByLeagueId method with tenant isolation
     - Implement findById method with tenant validation
     - _Requirements: 4.1, 4.2_
