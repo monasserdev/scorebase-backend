@@ -246,7 +246,7 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Verify points = (wins × 3) + (ties × 1)
     - Verify goal_differential = goals_for - goals_against
   
-  - [~] 7.6 Integrate standings recalculation with event creation
+  - [x] 7.6 Integrate standings recalculation with event creation
     - Trigger recalculateStandings when GAME_FINALIZED event is created
     - Extract season_id from game
     - Call recalculateStandings with tenant_id and season_id
@@ -266,11 +266,11 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - Verify standings recalculated correctly
     - _Requirements: 6.2, 6.7, 6.8, 7.1_
 
-- [~] 8. Checkpoint - Ensure event sourcing and standings work correctly
+- [x] 8. Checkpoint - Ensure event sourcing and standings work correctly
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 9. Implement API Gateway handler and routing
-  - [~] 9.1 Create main Lambda handler entry point
+  - [x] 9.1 Create main Lambda handler entry point
     - Implement handler function accepting APIGatewayProxyEvent
     - Extract and validate JWT token from Authorization header
     - Route requests to appropriate service based on HTTP method and path
