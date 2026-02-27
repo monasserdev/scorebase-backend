@@ -85,14 +85,14 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Test isEventReversed for reversed and non-reversed events
     - _Requirements: 13.1, 15.1_
 
-- [ ] 4. Implement SnapshotService
+- [x] 4. Implement SnapshotService
   - [x] 4.1 Create SnapshotService class
     - Implement generateSnapshot method (fetch from RDS + DynamoDB)
     - Implement generateSnapshotFromGame method (optimized path)
     - Add performance monitoring for <200ms target
     - _Requirements: 2.1-2.7, 3.1, 3.2, 8.1, 8.2_
   
-  - [~] 4.2 Implement snapshot generation logic
+  - [x] 4.2 Implement snapshot generation logic
     - Query GameRepository for current game state
     - Query EventRepository for 10 most recent events
     - Order events by occurred_at descending
@@ -114,7 +114,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - _Requirements: 2.1-2.7, 3.3, 3.4, 3.5_
 
 - [ ] 5. Implement BroadcastService
-  - [~] 5.1 Create BroadcastService class
+  - [x] 5.1 Create BroadcastService class
     - Implement broadcastSnapshot method
     - Implement sendSnapshotToConnection method
     - Use API Gateway Management API for posting messages
