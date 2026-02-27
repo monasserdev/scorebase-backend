@@ -22,6 +22,9 @@ export interface EnvironmentConfig {
   // Cognito configuration
   cognitoUserPoolId: string;
 
+  // WebSocket configuration
+  websocketApiEndpoint?: string;
+
   // Application configuration
   logLevel: string;
   nodeEnv: string;
@@ -40,6 +43,7 @@ export function loadEnvironmentConfig(): EnvironmentConfig {
     websocketConnectionsTableName: process.env.WEBSOCKET_CONNECTIONS_TABLE_NAME || 'scorebase-websocket-connections',
     s3ArchiveBucket: process.env.S3_ARCHIVE_BUCKET || '',
     cognitoUserPoolId: process.env.COGNITO_USER_POOL_ID || '',
+    websocketApiEndpoint: process.env.WEBSOCKET_API_ENDPOINT,
     logLevel: process.env.LOG_LEVEL || 'info',
     nodeEnv: process.env.NODE_ENV || 'development',
   };
