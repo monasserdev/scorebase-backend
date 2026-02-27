@@ -40,7 +40,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Add INVALID_SPATIAL_COORDINATES, INVALID_TIMESTAMP, EVENT_NOT_FOUND, EVENT_ALREADY_REVERSED, EVENT_NOT_REVERSIBLE to error code enum
     - _Requirements: 1.3, 6.3, 7.4, 15.2, 15.6_
 
-- [ ] 2. Implement spatial coordinate validation utility
+- [x] 2. Implement spatial coordinate validation utility
   - [x] 2.1 Create validateSpatialCoordinates function
     - Implement validation logic for x and y in 0.0-1.0 range
     - Return validation result with error details
@@ -59,7 +59,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - _Requirements: 1.1, 1.2, 1.3_
 
 - [ ] 3. Update DynamoDB schema and repositories
-  - [~] 3.1 Create ConnectionRepository
+  - [x] 3.1 Create ConnectionRepository
     - Implement storeConnection, removeConnection, getConnectionsByGame, getConnection methods
     - Use DynamoDB client with proper error handling
     - _Requirements: 4.1, 11.1, 11.2_

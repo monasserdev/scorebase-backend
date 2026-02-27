@@ -14,6 +14,7 @@ export interface EnvironmentConfig {
 
   // DynamoDB configuration
   dynamodbTableName: string;
+  websocketConnectionsTableName: string;
 
   // S3 configuration
   s3ArchiveBucket: string;
@@ -36,6 +37,7 @@ export function loadEnvironmentConfig(): EnvironmentConfig {
     dbName: process.env.DB_NAME || '',
     dbSecretArn: process.env.DB_SECRET_ARN || '',
     dynamodbTableName: process.env.DYNAMODB_TABLE_NAME || '',
+    websocketConnectionsTableName: process.env.WEBSOCKET_CONNECTIONS_TABLE_NAME || 'scorebase-websocket-connections',
     s3ArchiveBucket: process.env.S3_ARCHIVE_BUCKET || '',
     cognitoUserPoolId: process.env.COGNITO_USER_POOL_ID || '',
     logLevel: process.env.LOG_LEVEL || 'info',
