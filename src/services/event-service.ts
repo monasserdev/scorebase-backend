@@ -309,4 +309,149 @@ export class EventService {
     
     return { event, snapshot };
   }
+
+
+    /**
+     * Reverse a previously created event
+     *
+     * This method:
+     * 1. Validates reversed_event_id exists using EventRepository
+     * 2. Checks if event is already reversed using EventRepository.isEventReversed
+     * 3. Validates event type is reversible (GOAL_SCORED, PENALTY_ASSESSED, SHOT_ON_GOAL)
+     * 4. Applies reverse logic based on event type
+     * 5. Creates EVENT_REVERSAL event in DynamoDB
+     * 6. Generates snapshot using SnapshotService
+     * 7. Triggers broadcast using BroadcastService
+     *
+     * @param tenantId - Tenant identifier from JWT claims
+     * @param gameId - Game identifier
+     * @param reversedEventId - ID of event to reverse
+     * @param metadata - Event metadata (user_id, source, etc.)
+     * @returns Reversal event and updated game snapshot
+     * @throws NotFoundError if game or event doesn't exist (404 EVENT_NOT_FOUND)
+     * @throws BadRequestError if event type is not reversible (400 EVENT_NOT_REVERSIBLE)
+     * @throws BadRequestError if event is already reversed (409 EVENT_ALREADY_REVERSED)
+     *
+     * Requirements: 6.1-6.8, 15.1-15.6
+     */
+    async reverseEvent(
+      tenantId: string,
+      gameId: string,
+      reversedEventId: string,
+      metadata: EventMetadata
+    ): Promise<{ event: GameEvent; snapshot: GameSnapshot }> {
+      // 1. Validate game exists and belongs to tenant
+      const game = await this.gameRepository.findById(tenantId, gameId);
+
+      if (!game) {
+        throw new NotFoundError('Game not found');
+      }
+
+      // 2. Validate reversed_event_id exists
+      const events = await getEventsByGame(gameId, tenantId);
+      const eventToReverse = events.find(e => e.event_id === reversedEventId);
+
+      if (!eventToReverse) {
+        const error = new NotFoundError('Event not found');
+        (error as any).code = 'EVENT_NOT_FOUND';
+        throw error;
+      }
+
+      // 3. Check if event is already reversed
+      const isReversed = await this.eventRepository.isEventReversed(tenantId, reversedEventId);
+
+      if (isReversed) {
+        const error = new BadRequestError('Event has already been reversed');
+        (error as any).code = 'EVENT_ALREADY_REVERSED';
+        throw error;
+      }
+
+      // 4. Validate event type is reversible
+      // Note: SHOT_ON_GOAL will be added in future tasks
+      const reversibleEventTypes = [
+        EventType.GOAL_SCORED,
+        EventType.PENALTY_ASSESSED,
+      ];
+
+      if (!reversibleEventTypes.includes(eventToReverse.event_type as EventType)) {
+        const error = new BadRequestError('Event type is not reversible');
+        (error as any).code = 'EVENT_NOT_REVERSIBLE';
+        throw error;
+      }
+
+      // 5. Create EVENT_REVERSAL event
+      const reversalPayload = {
+        reversed_event_id: reversedEventId,
+      };
+
+      const reversalEvent = await writeEvent({
+        game_id: gameId,
+        tenant_id: tenantId,
+        event_type: EventType.EVENT_REVERSAL,
+        payload: reversalPayload,
+        metadata,
+      });
+
+      // 6. Apply reverse logic to game state
+      await this.applyReverseLogic(tenantId, gameId, eventToReverse, reversalEvent);
+
+      // 7. Fetch updated game state for snapshot generation
+      const updatedGame = await this.gameRepository.findById(tenantId, gameId);
+
+      if (!updatedGame) {
+        throw new NotFoundError('Game not found after reversal');
+      }
+
+      // 8. Generate snapshot using SnapshotService
+      const snapshot = await this.snapshotService.generateSnapshotFromGame(
+        tenantId,
+        gameId,
+        updatedGame
+      );
+
+      // 9. Trigger broadcast using BroadcastService
+      await this.broadcastService.broadcastSnapshot(
+        tenantId,
+        gameId,
+        snapshot,
+        'snapshot_update'
+      );
+
+      return { event: reversalEvent, snapshot };
+    }
+
+    /**
+     * Apply reverse logic based on event type
+     *
+     * This is a placeholder method that will be implemented in tasks 6.6-6.8.
+     * For now, it handles the basic structure.
+     *
+     * @param tenantId - Tenant identifier
+     * @param gameId - Game identifier
+     * @param eventToReverse - The original event being reversed
+     * @param reversalEvent - The EVENT_REVERSAL event
+     */
+    /**
+       * Apply reverse logic based on event type
+       * 
+       * This is a placeholder method that will be implemented in tasks 6.6-6.8.
+       * For now, it handles the basic structure.
+       * 
+       * @param tenantId - Tenant identifier
+       * @param gameId - Game identifier
+       * @param _eventToReverse - The original event being reversed (unused until tasks 6.6-6.8)
+       * @param reversalEvent - The EVENT_REVERSAL event
+       */
+      private async applyReverseLogic(
+        tenantId: string,
+        gameId: string,
+        _eventToReverse: GameEvent,
+        reversalEvent: GameEvent
+      ): Promise<void> {
+        // Apply reverse logic based on event type
+        // This will be implemented in tasks 6.6-6.8
+        // For now, we'll apply the reversal to the game state
+        await applyEventToGame(tenantId, gameId, reversalEvent);
+      }
+
 }

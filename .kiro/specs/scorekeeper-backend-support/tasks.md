@@ -176,7 +176,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Include invalid timestamp in error details
     - _Requirements: 7.2, 7.3, 7.4, 9.4_
   
-  - [~] 6.5 Add reverseEvent method
+  - [x] 6.5 Add reverseEvent method
     - Validate reversed_event_id exists
     - Validate event not already reversed
     - Validate event type is reversible
