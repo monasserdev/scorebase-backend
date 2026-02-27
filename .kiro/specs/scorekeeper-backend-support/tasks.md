@@ -32,7 +32,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Add EVENT_REVERSAL to EventType enum
     - _Requirements: 6.1, 13.1, 1.4_
   
-  - [~] 1.6 Define EventReversalPayload interface
+  - [x] 1.6 Define EventReversalPayload interface
     - Create interface with reversed_event_id, reason fields
     - _Requirements: 6.2_
   

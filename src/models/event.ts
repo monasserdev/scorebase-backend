@@ -81,6 +81,28 @@ export interface EventPayload {
 }
 
 /**
+ * Payload for EVENT_REVERSAL event type
+ * 
+ * Used to undo the effects of a previously recorded event.
+ * The reversal creates a new immutable event that references the original event.
+ * 
+ * Requirements: 6.2
+ */
+export interface EventReversalPayload extends EventPayload {
+  /**
+   * UUID of the event being reversed
+   * Must reference an existing event in the Event_Store
+   */
+  reversed_event_id: string;
+  
+  /**
+   * Optional reason for the reversal
+   * Useful for audit trail and understanding why the event was reversed
+   */
+  reason?: string;
+}
+
+/**
  * Game event structure stored in DynamoDB
  */
 export interface GameEvent {
