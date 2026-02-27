@@ -169,7 +169,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - If not found, proceed with event creation
     - _Requirements: 13.1, 13.2, 13.3_
   
-  - [~] 6.4 Implement offline timestamp validation
+  - [x] 6.4 Implement offline timestamp validation
     - Validate occurred_at not in future
     - Validate occurred_at within 24 hours
     - Return 400 INVALID_TIMESTAMP on failure

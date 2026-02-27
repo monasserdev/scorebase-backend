@@ -966,5 +966,209 @@ describe('EventService', () => {
       expect(mockApplyEventToGame).toHaveBeenCalled();
       expect(mockBroadcastService.broadcastSnapshot).toHaveBeenCalled();
     });
+
+    it('should throw BadRequestError with INVALID_TIMESTAMP when occurred_at is in the future (Requirement 7.2, 7.4, 9.4)', async () => {
+      const futureTimestamp = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour in future
+      
+      const payload = {
+        team_id: 'team-1',
+        player_id: 'player-1',
+        period: 1,
+        time_remaining: '10:30',
+      };
+
+      try {
+        await eventService.createEventWithSnapshot(
+          tenantId,
+          gameId,
+          EventType.GOAL_SCORED,
+          payload,
+          metadata,
+          { occurred_at: futureTimestamp }
+        );
+        expect(true).toBe(false); // Should not reach here
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(BadRequestError);
+        expect(error.message).toBe('Event timestamp cannot be in the future');
+        expect(error.code).toBe('INVALID_TIMESTAMP');
+        expect(error.details).toBeDefined();
+        expect(error.details.occurred_at).toBe(futureTimestamp);
+        expect(error.details.reason).toBe('Timestamp is in the future');
+      }
+    });
+
+    it('should throw BadRequestError with INVALID_TIMESTAMP when occurred_at is more than 24 hours old (Requirement 7.3, 7.4, 9.4)', async () => {
+      const oldTimestamp = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(); // 25 hours ago
+      
+      const payload = {
+        team_id: 'team-1',
+        player_id: 'player-1',
+        period: 1,
+        time_remaining: '10:30',
+      };
+
+      try {
+        await eventService.createEventWithSnapshot(
+          tenantId,
+          gameId,
+          EventType.GOAL_SCORED,
+          payload,
+          metadata,
+          { occurred_at: oldTimestamp }
+        );
+        expect(true).toBe(false); // Should not reach here
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(BadRequestError);
+        expect(error.message).toBe('Event timestamp must be within 24 hours');
+        expect(error.code).toBe('INVALID_TIMESTAMP');
+        expect(error.details).toBeDefined();
+        expect(error.details.occurred_at).toBe(oldTimestamp);
+        expect(error.details.reason).toBe('Timestamp is more than 24 hours old');
+      }
+    });
+
+    it('should accept valid occurred_at timestamp within 24 hours (Requirement 7.1, 7.2, 7.3)', async () => {
+      const validTimestamp = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2 hours ago
+      
+      const mockGame: Game = {
+        id: gameId,
+        season_id: seasonId,
+        home_team_id: 'team-1',
+        away_team_id: 'team-2',
+        scheduled_at: new Date(),
+        status: GameStatus.LIVE,
+        home_score: 0,
+        away_score: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const payload = {
+        team_id: 'team-1',
+        player_id: 'player-1',
+        period: 1,
+        time_remaining: '10:30',
+      };
+
+      const mockEvent: GameEvent = {
+        event_id: 'event-1',
+        game_id: gameId,
+        tenant_id: tenantId,
+        event_type: EventType.GOAL_SCORED,
+        event_version: '1.0',
+        occurred_at: validTimestamp,
+        sort_key: `${validTimestamp}#event-1`,
+        payload,
+        metadata,
+        ttl: 1234567890,
+      };
+
+      const mockSnapshot = {
+        game_id: gameId,
+        home_score: 1,
+        away_score: 0,
+        period: 1,
+        clock_seconds: 630,
+        status: 'in_progress',
+        recent_events: [mockEvent],
+        snapshot_version: '1.0',
+        generated_at: '2024-01-01T10:00:00Z',
+      };
+
+      mockGameRepository.findById.mockResolvedValue(mockGame);
+      mockValidateEventPayload.mockReturnValue(undefined);
+      mockWriteEvent.mockResolvedValue(mockEvent);
+      mockApplyEventToGame.mockResolvedValue(undefined);
+      mockSnapshotService.generateSnapshotFromGame.mockResolvedValue(mockSnapshot);
+      mockBroadcastService.broadcastSnapshot.mockResolvedValue(undefined);
+
+      const result = await eventService.createEventWithSnapshot(
+        tenantId,
+        gameId,
+        EventType.GOAL_SCORED,
+        payload,
+        metadata,
+        { occurred_at: validTimestamp }
+      );
+
+      expect(result.event).toEqual(mockEvent);
+      expect(result.snapshot).toEqual(mockSnapshot);
+      
+      // Verify event was created with the provided timestamp
+      expect(mockWriteEvent).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          occurred_at: validTimestamp,
+        })
+      );
+    });
+
+    it('should accept occurred_at timestamp at exactly 24 hours boundary (Requirement 7.3)', async () => {
+      const boundaryTimestamp = new Date(Date.now() - 24 * 60 * 60 * 1000 + 1000).toISOString(); // 24 hours ago minus 1 second
+      
+      const mockGame: Game = {
+        id: gameId,
+        season_id: seasonId,
+        home_team_id: 'team-1',
+        away_team_id: 'team-2',
+        scheduled_at: new Date(),
+        status: GameStatus.LIVE,
+        home_score: 0,
+        away_score: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const payload = {
+        team_id: 'team-1',
+        player_id: 'player-1',
+        period: 1,
+        time_remaining: '10:30',
+      };
+
+      const mockEvent: GameEvent = {
+        event_id: 'event-1',
+        game_id: gameId,
+        tenant_id: tenantId,
+        event_type: EventType.GOAL_SCORED,
+        event_version: '1.0',
+        occurred_at: boundaryTimestamp,
+        sort_key: `${boundaryTimestamp}#event-1`,
+        payload,
+        metadata,
+        ttl: 1234567890,
+      };
+
+      const mockSnapshot = {
+        game_id: gameId,
+        home_score: 1,
+        away_score: 0,
+        period: 1,
+        clock_seconds: 630,
+        status: 'in_progress',
+        recent_events: [mockEvent],
+        snapshot_version: '1.0',
+        generated_at: '2024-01-01T10:00:00Z',
+      };
+
+      mockGameRepository.findById.mockResolvedValue(mockGame);
+      mockValidateEventPayload.mockReturnValue(undefined);
+      mockWriteEvent.mockResolvedValue(mockEvent);
+      mockApplyEventToGame.mockResolvedValue(undefined);
+      mockSnapshotService.generateSnapshotFromGame.mockResolvedValue(mockSnapshot);
+      mockBroadcastService.broadcastSnapshot.mockResolvedValue(undefined);
+
+      const result = await eventService.createEventWithSnapshot(
+        tenantId,
+        gameId,
+        EventType.GOAL_SCORED,
+        payload,
+        metadata,
+        { occurred_at: boundaryTimestamp }
+      );
+
+      expect(result.event).toEqual(mockEvent);
+      expect(result.snapshot).toEqual(mockSnapshot);
+    });
   });
 });

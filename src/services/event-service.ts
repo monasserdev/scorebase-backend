@@ -139,15 +139,16 @@ export class EventService {
    * This method provides the complete event creation flow for scorekeeper operations:
    * 1. Validates spatial coordinates if present in payload
    * 2. Checks idempotency_key for duplicate prevention
-   * 3. Validates game exists and belongs to tenant
-   * 4. Prevents event creation for finalized games
-   * 5. Validates event payload against event_type schema
-   * 6. Preserves client-provided occurred_at timestamp for offline events
-   * 7. Writes event to DynamoDB with TTL
-   * 8. Applies event to game state in RDS
-   * 9. Generates snapshot using SnapshotService
-   * 10. Triggers broadcast using BroadcastService
-   * 11. Triggers standings recalculation for GAME_FINALIZED events
+   * 3. Validates occurred_at timestamp if provided (not in future, within 24 hours)
+   * 4. Validates game exists and belongs to tenant
+   * 5. Prevents event creation for finalized games
+   * 6. Validates event payload against event_type schema
+   * 7. Preserves client-provided occurred_at timestamp for offline events
+   * 8. Writes event to DynamoDB with TTL
+   * 9. Applies event to game state in RDS
+   * 10. Generates snapshot using SnapshotService
+   * 11. Triggers broadcast using BroadcastService
+   * 12. Triggers standings recalculation for GAME_FINALIZED events
    * 
    * @param tenantId - Tenant identifier from JWT claims
    * @param gameId - Game identifier
@@ -157,9 +158,9 @@ export class EventService {
    * @param options - Optional parameters for idempotency and offline events
    * @returns Created event and generated snapshot
    * @throws NotFoundError if game doesn't exist or doesn't belong to tenant
-   * @throws BadRequestError if game is finalized, payload is invalid, or duplicate idempotency_key
+   * @throws BadRequestError if game is finalized, payload is invalid, timestamp is invalid, or duplicate idempotency_key
    * 
-   * Requirements: 1.1-1.5, 2.1, 7.1, 13.1-13.3
+   * Requirements: 1.1-1.5, 2.1, 7.1, 7.2, 7.3, 7.4, 9.4, 13.1-13.3
    */
   async createEventWithSnapshot(
     tenantId: string,
@@ -205,6 +206,35 @@ export class EventService {
 
         // Return existing event with current snapshot (200 response)
         return { event: existingEvent, snapshot };
+      }
+    }
+
+    // 2.5. Validate offline timestamp if provided
+    if (options?.occurred_at) {
+      const occurredAt = new Date(options.occurred_at);
+      const now = new Date();
+      
+      // Validate timestamp is not in the future
+      if (occurredAt > now) {
+        const error = new BadRequestError('Event timestamp cannot be in the future');
+        (error as any).code = 'INVALID_TIMESTAMP';
+        (error as any).details = {
+          occurred_at: options.occurred_at,
+          reason: 'Timestamp is in the future'
+        };
+        throw error;
+      }
+      
+      // Validate timestamp is within 24 hours
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      if (occurredAt < twentyFourHoursAgo) {
+        const error = new BadRequestError('Event timestamp must be within 24 hours');
+        (error as any).code = 'INVALID_TIMESTAMP';
+        (error as any).details = {
+          occurred_at: options.occurred_at,
+          reason: 'Timestamp is more than 24 hours old'
+        };
+        throw error;
       }
     }
 
