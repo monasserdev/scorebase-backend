@@ -186,7 +186,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Trigger broadcast
     - _Requirements: 6.1-6.8, 15.1-15.6_
   
-  - [~] 6.6 Implement reversal logic for GOAL_SCORED
+  - [x] 6.6 Implement reversal logic for GOAL_SCORED
     - Decrement team score by 1
     - Update game state in RDS
     - _Requirements: 6.5_

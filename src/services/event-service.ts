@@ -22,6 +22,7 @@ import { validateSpatialCoordinates } from '../utils/spatial-coordinate-validati
 import { writeEvent, getEventsByGame } from '../config/dynamodb';
 import { applyEventToGame } from '../utils/apply-event-to-game';
 import { recalculateStandings } from '../utils/standings-calculation';
+import { transaction } from '../config/database';
 import { SnapshotService } from './snapshot-service';
 import { BroadcastService } from './broadcast-service';
 
@@ -422,36 +423,102 @@ export class EventService {
 
     /**
      * Apply reverse logic based on event type
-     *
-     * This is a placeholder method that will be implemented in tasks 6.6-6.8.
-     * For now, it handles the basic structure.
-     *
+     * 
+     * Implements reversal logic for different event types:
+     * - GOAL_SCORED: Decrements the appropriate team's score by 1
+     * - PENALTY_ASSESSED: Removes the penalty from active penalties (future task)
+     * - SHOT_ON_GOAL: Updates shot statistics (future task)
+     * 
      * @param tenantId - Tenant identifier
      * @param gameId - Game identifier
      * @param eventToReverse - The original event being reversed
      * @param reversalEvent - The EVENT_REVERSAL event
      */
-    /**
-       * Apply reverse logic based on event type
-       * 
-       * This is a placeholder method that will be implemented in tasks 6.6-6.8.
-       * For now, it handles the basic structure.
-       * 
-       * @param tenantId - Tenant identifier
-       * @param gameId - Game identifier
-       * @param _eventToReverse - The original event being reversed (unused until tasks 6.6-6.8)
-       * @param reversalEvent - The EVENT_REVERSAL event
-       */
       private async applyReverseLogic(
         tenantId: string,
         gameId: string,
-        _eventToReverse: GameEvent,
+        eventToReverse: GameEvent,
         reversalEvent: GameEvent
       ): Promise<void> {
-        // Apply reverse logic based on event type
-        // This will be implemented in tasks 6.6-6.8
-        // For now, we'll apply the reversal to the game state
-        await applyEventToGame(tenantId, gameId, reversalEvent);
+        // Apply reverse logic based on the original event type
+        switch (eventToReverse.event_type) {
+          case EventType.GOAL_SCORED:
+            await this.reverseGoalScored(tenantId, gameId, eventToReverse);
+            break;
+          
+          case EventType.PENALTY_ASSESSED:
+            // TODO: Implement in task 6.7
+            break;
+          
+          // Future event types can be added here
+          default:
+            // For other event types, apply the reversal event to game state
+            await applyEventToGame(tenantId, gameId, reversalEvent);
+        }
       }
+
+    /**
+     * Reverse a GOAL_SCORED event by decrementing the team's score
+     * 
+     * @param tenantId - Tenant identifier
+     * @param gameId - Game identifier
+     * @param goalEvent - The original GOAL_SCORED event
+     */
+    private async reverseGoalScored(
+      tenantId: string,
+      gameId: string,
+      goalEvent: GameEvent
+    ): Promise<void> {
+      const { team_id } = goalEvent.payload;
+
+      // Use a transaction to ensure atomic update
+      await transaction(async (client) => {
+        // Verify game exists and belongs to tenant
+        const gameCheck = await client.query(
+          `SELECT g.id, g.home_team_id, g.away_team_id, g.home_score, g.away_score
+           FROM games g
+           INNER JOIN seasons s ON g.season_id = s.id
+           INNER JOIN leagues l ON s.league_id = l.id
+           WHERE l.tenant_id = $1 AND g.id = $2`,
+          [tenantId, gameId]
+        );
+
+        if (gameCheck.rows.length === 0) {
+          throw new NotFoundError(`Game not found: ${gameId}`);
+        }
+
+        const game = gameCheck.rows[0];
+
+        // Determine which score to decrement
+        let updateQuery: string;
+        if (team_id === game.home_team_id) {
+          // Ensure score doesn't go below 0
+          if (game.home_score <= 0) {
+            throw new BadRequestError(`Cannot reverse goal: home team score is already 0`);
+          }
+          updateQuery = `
+            UPDATE games
+            SET home_score = home_score - 1,
+                updated_at = NOW()
+            WHERE id = $1
+          `;
+        } else if (team_id === game.away_team_id) {
+          // Ensure score doesn't go below 0
+          if (game.away_score <= 0) {
+            throw new BadRequestError(`Cannot reverse goal: away team score is already 0`);
+          }
+          updateQuery = `
+            UPDATE games
+            SET away_score = away_score - 1,
+                updated_at = NOW()
+            WHERE id = $1
+          `;
+        } else {
+          throw new BadRequestError(`Team ${team_id} is not part of game ${gameId}`);
+        }
+
+        await client.query(updateQuery, [gameId]);
+      });
+    }
 
 }
