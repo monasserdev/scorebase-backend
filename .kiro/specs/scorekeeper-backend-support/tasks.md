@@ -58,7 +58,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Test edge cases (exactly 0.0, exactly 1.0)
     - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 3. Update DynamoDB schema and repositories
+- [x] 3. Update DynamoDB schema and repositories
   - [x] 3.1 Create ConnectionRepository
     - Implement storeConnection, removeConnection, getConnectionsByGame, getConnection methods
     - Use DynamoDB client with proper error handling
@@ -86,7 +86,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - _Requirements: 13.1, 15.1_
 
 - [ ] 4. Implement SnapshotService
-  - [~] 4.1 Create SnapshotService class
+  - [x] 4.1 Create SnapshotService class
     - Implement generateSnapshot method (fetch from RDS + DynamoDB)
     - Implement generateSnapshotFromGame method (optimized path)
     - Add performance monitoring for <200ms target
