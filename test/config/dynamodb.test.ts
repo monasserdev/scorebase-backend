@@ -13,6 +13,8 @@ import {
   getEventsByTenant,
   getDynamoDBClient,
   resetDynamoDBClient,
+  WEBSOCKET_CONNECTIONS_TABLE,
+  GAME_CONNECTIONS_INDEX,
 } from '../../src/config/dynamodb';
 import { EventType } from '../../src/models/event';
 
@@ -44,6 +46,16 @@ describe('DynamoDB Client Module', () => {
   afterEach(() => {
     jest.useRealTimers();
     jest.restoreAllMocks();
+  });
+
+  describe('Constants', () => {
+    it('should export WEBSOCKET_CONNECTIONS_TABLE constant', () => {
+      expect(WEBSOCKET_CONNECTIONS_TABLE).toBe('scorebase-websocket-connections');
+    });
+
+    it('should export GAME_CONNECTIONS_INDEX constant', () => {
+      expect(GAME_CONNECTIONS_INDEX).toBe('game-connections-index');
+    });
   });
 
   describe('getDynamoDBClient', () => {

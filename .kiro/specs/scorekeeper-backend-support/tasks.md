@@ -69,7 +69,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Add isEventReversed method to check for reversal events
     - _Requirements: 13.1, 15.1_
   
-  - [~] 3.3 Update DynamoDB config for connections table
+  - [x] 3.3 Update DynamoDB config for connections table
     - Add table name constant for scorebase-websocket-connections
     - Add GSI name constant for game-connections-index
     - _Requirements: 4.1_

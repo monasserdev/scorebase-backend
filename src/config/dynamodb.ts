@@ -32,6 +32,16 @@ const EVENT_TTL_DAYS = 90;
 const EVENT_VERSION = '1.0';
 
 /**
+ * WebSocket connections table name
+ */
+export const WEBSOCKET_CONNECTIONS_TABLE = 'scorebase-websocket-connections';
+
+/**
+ * WebSocket connections GSI for game-based queries
+ */
+export const GAME_CONNECTIONS_INDEX = 'game-connections-index';
+
+/**
  * Get or create the DynamoDB DocumentClient
  * Reuses client across Lambda invocations for performance
  */
