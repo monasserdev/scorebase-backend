@@ -163,7 +163,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Include invalid values in error details
     - _Requirements: 1.1, 1.2, 1.3, 9.2_
   
-  - [~] 6.3 Implement idempotency check
+  - [x] 6.3 Implement idempotency check
     - Query EventRepository.findByIdempotencyKey
     - If found, return existing event's snapshot (200)
     - If not found, proceed with event creation

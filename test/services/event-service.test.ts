@@ -63,8 +63,8 @@ class MockStandingsRepository {
 }
 
 class MockEventRepository {
-  findByIdempotencyKey = jest.fn();
-  isEventReversed = jest.fn();
+  findByIdempotencyKey = jest.fn<(tenantId: string, idempotencyKey: string) => Promise<GameEvent | null>>();
+  isEventReversed = jest.fn<(tenantId: string, eventId: string) => Promise<boolean>>();
 }
 
 class MockSnapshotService {
@@ -726,6 +726,245 @@ describe('EventService', () => {
       expect(result.event).toEqual(mockEvent);
       expect(result.snapshot).toEqual(mockSnapshot);
       expect(mockValidateSpatialCoordinates).not.toHaveBeenCalled();
+    });
+
+    it('should return existing event and snapshot when idempotency_key is duplicate (Requirement 13.1, 13.2, 13.3)', async () => {
+      const idempotencyKey = 'idempotency-key-123';
+      
+      const payload = {
+        team_id: 'team-1',
+        player_id: 'player-1',
+        period: 1,
+        time_remaining: '10:30',
+      };
+
+      // Existing event that was already created
+      const existingEvent: GameEvent = {
+        event_id: 'event-existing',
+        game_id: gameId,
+        tenant_id: tenantId,
+        event_type: EventType.GOAL_SCORED,
+        event_version: '1.0',
+        occurred_at: '2024-01-01T10:00:00Z',
+        sort_key: '2024-01-01T10:00:00Z#event-existing',
+        payload,
+        metadata,
+        ttl: 1234567890,
+        idempotency_key: idempotencyKey,
+      };
+
+      const mockGame: Game = {
+        id: gameId,
+        season_id: seasonId,
+        home_team_id: 'team-1',
+        away_team_id: 'team-2',
+        scheduled_at: new Date(),
+        status: GameStatus.LIVE,
+        home_score: 1, // Score already updated from the existing event
+        away_score: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const mockSnapshot = {
+        game_id: gameId,
+        home_score: 1,
+        away_score: 0,
+        period: 1,
+        clock_seconds: 630,
+        status: 'in_progress',
+        recent_events: [existingEvent],
+        snapshot_version: '1.0',
+        generated_at: '2024-01-01T10:00:00Z',
+      };
+
+      // Mock idempotency check to return existing event
+      mockEventRepository.findByIdempotencyKey.mockResolvedValue(existingEvent);
+      mockGameRepository.findById.mockResolvedValue(mockGame);
+      mockSnapshotService.generateSnapshotFromGame.mockResolvedValue(mockSnapshot);
+
+      const result = await eventService.createEventWithSnapshot(
+        tenantId,
+        gameId,
+        EventType.GOAL_SCORED,
+        payload,
+        metadata,
+        { idempotency_key: idempotencyKey }
+      );
+
+      // Should return existing event, not create a new one
+      expect(result.event).toEqual(existingEvent);
+      expect(result.snapshot).toEqual(mockSnapshot);
+      
+      // Verify idempotency check was called
+      expect(mockEventRepository.findByIdempotencyKey).toHaveBeenCalledWith(tenantId, idempotencyKey);
+      
+      // Verify no new event was written to DynamoDB
+      expect(mockWriteEvent).not.toHaveBeenCalled();
+      
+      // Verify no game state update was applied
+      expect(mockApplyEventToGame).not.toHaveBeenCalled();
+      
+      // Verify no broadcast was triggered (event already processed)
+      expect(mockBroadcastService.broadcastSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('should create new event when idempotency_key is not duplicate (Requirement 13.1, 13.3)', async () => {
+      const idempotencyKey = 'idempotency-key-new';
+      
+      const mockGame: Game = {
+        id: gameId,
+        season_id: seasonId,
+        home_team_id: 'team-1',
+        away_team_id: 'team-2',
+        scheduled_at: new Date(),
+        status: GameStatus.LIVE,
+        home_score: 0,
+        away_score: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const payload = {
+        team_id: 'team-1',
+        player_id: 'player-1',
+        period: 1,
+        time_remaining: '10:30',
+      };
+
+      const mockEvent: GameEvent = {
+        event_id: 'event-new',
+        game_id: gameId,
+        tenant_id: tenantId,
+        event_type: EventType.GOAL_SCORED,
+        event_version: '1.0',
+        occurred_at: '2024-01-01T10:00:00Z',
+        sort_key: '2024-01-01T10:00:00Z#event-new',
+        payload,
+        metadata,
+        ttl: 1234567890,
+        idempotency_key: idempotencyKey,
+      };
+
+      const mockSnapshot = {
+        game_id: gameId,
+        home_score: 1,
+        away_score: 0,
+        period: 1,
+        clock_seconds: 630,
+        status: 'in_progress',
+        recent_events: [mockEvent],
+        snapshot_version: '1.0',
+        generated_at: '2024-01-01T10:00:00Z',
+      };
+
+      // Mock idempotency check to return null (no existing event)
+      mockEventRepository.findByIdempotencyKey.mockResolvedValue(null);
+      mockGameRepository.findById.mockResolvedValue(mockGame);
+      mockValidateEventPayload.mockReturnValue(undefined);
+      mockWriteEvent.mockResolvedValue(mockEvent);
+      mockApplyEventToGame.mockResolvedValue(undefined);
+      mockSnapshotService.generateSnapshotFromGame.mockResolvedValue(mockSnapshot);
+      mockBroadcastService.broadcastSnapshot.mockResolvedValue(undefined);
+
+      const result = await eventService.createEventWithSnapshot(
+        tenantId,
+        gameId,
+        EventType.GOAL_SCORED,
+        payload,
+        metadata,
+        { idempotency_key: idempotencyKey }
+      );
+
+      // Should create and return new event
+      expect(result.event).toEqual(mockEvent);
+      expect(result.snapshot).toEqual(mockSnapshot);
+      
+      // Verify idempotency check was called
+      expect(mockEventRepository.findByIdempotencyKey).toHaveBeenCalledWith(tenantId, idempotencyKey);
+      
+      // Verify new event was written to DynamoDB
+      expect(mockWriteEvent).toHaveBeenCalled();
+      
+      // Verify game state update was applied
+      expect(mockApplyEventToGame).toHaveBeenCalled();
+      
+      // Verify broadcast was triggered
+      expect(mockBroadcastService.broadcastSnapshot).toHaveBeenCalled();
+    });
+
+    it('should proceed with normal event creation when no idempotency_key is provided', async () => {
+      const mockGame: Game = {
+        id: gameId,
+        season_id: seasonId,
+        home_team_id: 'team-1',
+        away_team_id: 'team-2',
+        scheduled_at: new Date(),
+        status: GameStatus.LIVE,
+        home_score: 0,
+        away_score: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const payload = {
+        team_id: 'team-1',
+        player_id: 'player-1',
+        period: 1,
+        time_remaining: '10:30',
+      };
+
+      const mockEvent: GameEvent = {
+        event_id: 'event-1',
+        game_id: gameId,
+        tenant_id: tenantId,
+        event_type: EventType.GOAL_SCORED,
+        event_version: '1.0',
+        occurred_at: '2024-01-01T10:00:00Z',
+        sort_key: '2024-01-01T10:00:00Z#event-1',
+        payload,
+        metadata,
+        ttl: 1234567890,
+      };
+
+      const mockSnapshot = {
+        game_id: gameId,
+        home_score: 1,
+        away_score: 0,
+        period: 1,
+        clock_seconds: 630,
+        status: 'in_progress',
+        recent_events: [mockEvent],
+        snapshot_version: '1.0',
+        generated_at: '2024-01-01T10:00:00Z',
+      };
+
+      mockGameRepository.findById.mockResolvedValue(mockGame);
+      mockValidateEventPayload.mockReturnValue(undefined);
+      mockWriteEvent.mockResolvedValue(mockEvent);
+      mockApplyEventToGame.mockResolvedValue(undefined);
+      mockSnapshotService.generateSnapshotFromGame.mockResolvedValue(mockSnapshot);
+      mockBroadcastService.broadcastSnapshot.mockResolvedValue(undefined);
+
+      const result = await eventService.createEventWithSnapshot(
+        tenantId,
+        gameId,
+        EventType.GOAL_SCORED,
+        payload,
+        metadata
+        // No options provided - no idempotency_key
+      );
+
+      expect(result.event).toEqual(mockEvent);
+      expect(result.snapshot).toEqual(mockSnapshot);
+      
+      // Verify idempotency check was NOT called
+      expect(mockEventRepository.findByIdempotencyKey).not.toHaveBeenCalled();
+      
+      // Verify normal event creation flow
+      expect(mockWriteEvent).toHaveBeenCalled();
+      expect(mockApplyEventToGame).toHaveBeenCalled();
+      expect(mockBroadcastService.broadcastSnapshot).toHaveBeenCalled();
     });
   });
 });
