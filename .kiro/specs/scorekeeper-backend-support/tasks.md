@@ -36,7 +36,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Create interface with reversed_event_id, reason fields
     - _Requirements: 6.2_
   
-  - [~] 1.7 Add new error codes
+  - [x] 1.7 Add new error codes
     - Add INVALID_SPATIAL_COORDINATES, INVALID_TIMESTAMP, EVENT_NOT_FOUND, EVENT_ALREADY_REVERSED, EVENT_NOT_REVERSIBLE to error code enum
     - _Requirements: 1.3, 6.3, 7.4, 15.2, 15.6_
 
