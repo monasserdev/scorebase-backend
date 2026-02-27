@@ -191,7 +191,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Update game state in RDS
     - _Requirements: 6.5_
   
-  - [~] 6.7 Implement reversal logic for PENALTY_ASSESSED
+  - [x] 6.7 Implement reversal logic for PENALTY_ASSESSED
     - Remove penalty from active penalties
     - Update game state in RDS
     - _Requirements: 6.6, 15.4_

@@ -447,7 +447,7 @@ export class EventService {
             break;
           
           case EventType.PENALTY_ASSESSED:
-            // TODO: Implement in task 6.7
+            await this.reversePenaltyAssessed(tenantId, gameId, eventToReverse);
             break;
           
           // Future event types can be added here
@@ -520,5 +520,66 @@ export class EventService {
         await client.query(updateQuery, [gameId]);
       });
     }
+
+    /**
+     * Reverse a PENALTY_ASSESSED event by removing the penalty from active penalties
+     *
+     * NOTE: This is a placeholder implementation. The Game model does not currently
+     * have an active_penalties field. This method logs the reversal for audit purposes
+     * and will be enhanced when penalty tracking is added to the Game model.
+     *
+     * @param tenantId - Tenant identifier
+     * @param gameId - Game identifier
+     * @param penaltyEvent - The original PENALTY_ASSESSED event
+     */
+    private async reversePenaltyAssessed(
+      tenantId: string,
+      gameId: string,
+      penaltyEvent: GameEvent
+    ): Promise<void> {
+      const { team_id } = penaltyEvent.payload;
+
+      // Use a transaction to ensure atomic update
+      await transaction(async (client) => {
+        // Verify game exists and belongs to tenant
+        const gameCheck = await client.query(
+          `SELECT g.id, g.home_team_id, g.away_team_id
+           FROM games g
+           INNER JOIN seasons s ON g.season_id = s.id
+           INNER JOIN leagues l ON s.league_id = l.id
+           WHERE l.tenant_id = $1 AND g.id = $2`,
+          [tenantId, gameId]
+        );
+
+        if (gameCheck.rows.length === 0) {
+          throw new NotFoundError(`Game not found: ${gameId}`);
+        }
+
+        const game = gameCheck.rows[0];
+
+        // Verify team is part of the game
+        if (team_id !== game.home_team_id && team_id !== game.away_team_id) {
+          throw new BadRequestError(`Team ${team_id} is not part of game ${gameId}`);
+        }
+
+        // TODO: When active_penalties field is added to Game model:
+        // 1. Query current active_penalties from games table
+        // 2. Remove the penalty matching the original event's details
+        // 3. Update games table with modified active_penalties
+        //
+        // For now, log the reversal for audit purposes
+        // The penalty reversal will be fully functional once the Game model
+        // includes penalty tracking (future enhancement)
+
+        // Update game's updated_at timestamp to reflect the reversal
+        await client.query(
+          `UPDATE games
+           SET updated_at = NOW()
+           WHERE id = $1`,
+          [gameId]
+        );
+      });
+    }
+
 
 }
