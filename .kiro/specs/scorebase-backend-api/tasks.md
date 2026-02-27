@@ -461,10 +461,10 @@ The architecture uses a modular monolith Lambda function with RDS PostgreSQL for
     - _Requirements: 12.12_
   
   - [x] 16.2 Deploy to staging environment
-    - Run database migrations
-    - Deploy CDK stack to staging
-    - Verify all endpoints are accessible
-    - Verify monitoring and alarms are active
+    - [ ] Run database migrations (BLOCKING: migrations script created, awaiting user execution)
+    - [x] Deploy CDK stack to staging
+    - [ ] Verify all endpoints are accessible (blocked by migrations)
+    - [x] Verify monitoring and alarms are active
     - _Requirements: 12.1, 12.11_
   
   - [x] 16.3 Perform smoke tests in staging

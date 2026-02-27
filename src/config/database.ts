@@ -9,11 +9,13 @@
  */
 
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 import { loadEnvironmentConfig } from './environment';
 import { logDatabase } from '../utils/logger';
 
 // Global pool instance for Lambda warm starts
 let pool: Pool | null = null;
+let cachedCredentials: { username: string; password: string } | null = null;
 
 /**
  * Database connection pool configuration
@@ -36,25 +38,60 @@ const DEFAULT_POOL_CONFIG: PoolConfig = {
 };
 
 /**
+ * Fetch database credentials from AWS Secrets Manager
+ */
+async function getCredentialsFromSecretsManager(secretArn: string): Promise<{ username: string; password: string }> {
+  if (cachedCredentials) {
+    return cachedCredentials;
+  }
+
+  const client = new SecretsManagerClient({ region: process.env.AWS_REGION || 'us-east-1' });
+  
+  try {
+    const command = new GetSecretValueCommand({ SecretId: secretArn });
+    const response = await client.send(command);
+    
+    if (!response.SecretString) {
+      throw new Error('Secret value is empty');
+    }
+    
+    const secret = JSON.parse(response.SecretString);
+    cachedCredentials = {
+      username: secret.username,
+      password: secret.password,
+    };
+    
+    return cachedCredentials;
+  } catch (error) {
+    console.error('Failed to fetch database credentials from Secrets Manager:', error);
+    throw new Error(`Failed to fetch database credentials: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
  * Get or create the database connection pool
  * Reuses pool across Lambda invocations for performance
  */
-export function getPool(): Pool {
+export async function getPool(): Promise<Pool> {
   if (!pool) {
     const config = loadEnvironmentConfig();
+    
+    // Fetch credentials from Secrets Manager
+    const credentials = await getCredentialsFromSecretsManager(config.dbSecretArn);
     
     pool = new Pool({
       host: config.dbHost,
       port: config.dbPort,
       database: config.dbName,
+      user: credentials.username,
+      password: credentials.password,
       min: DEFAULT_POOL_CONFIG.min,
       max: DEFAULT_POOL_CONFIG.max,
       idleTimeoutMillis: DEFAULT_POOL_CONFIG.idleTimeoutMillis,
       connectionTimeoutMillis: DEFAULT_POOL_CONFIG.connectionTimeoutMillis,
-      // Credentials will be fetched from Secrets Manager in production
-      // For now, using environment variables for development
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
+      ssl: {
+        rejectUnauthorized: false, // RDS uses self-signed certificates
+      },
     });
 
     // Handle pool errors
@@ -82,7 +119,7 @@ export async function query<T extends QueryResultRow = any>(
   text: string,
   params?: any[]
 ): Promise<QueryResult<T>> {
-  const pool = getPool();
+  const pool = await getPool();
   return pool.query<T>(text, params);
 }
 
@@ -96,7 +133,7 @@ export async function query<T extends QueryResultRow = any>(
 export async function transaction<T>(
   callback: (client: PoolClient) => Promise<T>
 ): Promise<T> {
-  const pool = getPool();
+  const pool = await getPool();
   const client = await pool.connect();
 
   try {

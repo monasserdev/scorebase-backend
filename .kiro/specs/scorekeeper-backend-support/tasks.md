@@ -22,7 +22,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Create interface with connection_id, game_id, tenant_id, user_id, connected_at, ttl fields
     - _Requirements: 4.1, 11.1_
   
-  - [~] 1.4 Define WebSocketMessage interface
+  - [x] 1.4 Define WebSocketMessage interface
     - Create interface with message_type, timestamp, data, request_id fields
     - Define message_type enum (initial_snapshot, snapshot_update, ping, pong)
     - _Requirements: 14.1-14.6_

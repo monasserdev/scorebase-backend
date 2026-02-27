@@ -1,0 +1,1 @@
+{"version":3,"file":"run-migrations.d.ts","sourceRoot":"","sources":["../../src/scripts/run-migrations.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AAIH,UAAU,eAAe;IACvB,OAAO,EAAE,OAAO,CAAC;IACjB,OAAO,EAAE,MAAM,CAAC;IAChB,KAAK,CAAC,EAAE,MAAM,CAAC;CAChB;AAED;;GAEG;AACH,wBAAsB,aAAa,IAAI,OAAO,CAAC,eAAe,CAAC,CA2J9D;AAED;;GAEG;AACH,wBAAsB,OAAO,IAAI,OAAO,CAAC,GAAG,CAAC,CAO5C"}

@@ -261,8 +261,8 @@ export class ScorebaseBackendStack extends cdk.Stack {
     const apiFunction = new lambda.Function(this, 'ScoreBaseAPIFunction', {
       functionName: 'scorebase-api',
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset('dist'),
+      handler: 'handlers/api-handler.handler',
+      code: lambda.Code.fromAsset('lambda-package'),
       vpc,
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
@@ -281,7 +281,7 @@ export class ScorebaseBackendStack extends cdk.Stack {
         DYNAMODB_TABLE_NAME: eventTable.tableName,
         DYNAMODB_GSI_NAME: 'tenant-events-index',
         S3_ARCHIVE_BUCKET: eventArchiveBucket.bucketName,
-        USER_POOL_ID: userPool.userPoolId,
+        COGNITO_USER_POOL_ID: userPool.userPoolId,
         USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
         AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       },
@@ -455,7 +455,7 @@ export class ScorebaseBackendStack extends cdk.Stack {
       functionName: 'scorebase-api-docs',
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'handlers/docs-handler.handler',
-      code: lambda.Code.fromAsset('dist'),
+      code: lambda.Code.fromAsset('lambda-package'),
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
       logRetention: logs.RetentionDays.ONE_WEEK,

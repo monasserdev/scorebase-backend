@@ -5,8 +5,10 @@
  * game synchronization. Connections are stored in DynamoDB for tracking
  * active clients and enabling broadcast distribution.
  * 
- * Requirements: 4.1, 11.1
+ * Requirements: 4.1, 11.1, 14.1-14.6
  */
+
+import { GameSnapshot } from './snapshot';
 
 /**
  * WebSocket connection metadata stored in DynamoDB
@@ -33,3 +35,27 @@ export interface WebSocketConnection {
   connected_at: string;         // ISO-8601 timestamp
   ttl: number;                  // Unix timestamp for DynamoDB TTL (24 hours)
 }
+
+/**
+ * WebSocket message format for real-time communication
+ * 
+ * Used for:
+ * - Sending initial game snapshots on connection
+ * - Broadcasting game state updates to connected clients
+ * - Keepalive ping/pong messages
+ * 
+ * Message Types:
+ * - initial_snapshot: Sent when client first connects
+ * - snapshot_update: Broadcast when game events occur
+ * - ping: Server keepalive message (every 30 seconds)
+ * - pong: Client response to ping
+ * 
+ * Requirements: 14.1-14.6
+ */
+export interface WebSocketMessage {
+  message_type: 'initial_snapshot' | 'snapshot_update' | 'ping' | 'pong';
+  timestamp: string;            // ISO-8601 timestamp
+  data?: GameSnapshot;          // Present for snapshot messages (initial_snapshot, snapshot_update)
+  request_id?: string;          // Optional request correlation ID
+}
+

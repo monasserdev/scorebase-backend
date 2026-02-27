@@ -1,0 +1,1 @@
+{"version":3,"file":"event-validation.d.ts","sourceRoot":"","sources":["../../src/utils/event-validation.ts"],"names":[],"mappings":"AAAA;;;;;;;GAOG;AAIH,OAAO,EAAE,SAAS,EAAE,YAAY,EAAE,MAAM,iBAAiB,CAAC;AA4M1D;;;;;;GAMG;AACH,wBAAgB,oBAAoB,CAAC,UAAU,EAAE,SAAS,EAAE,OAAO,EAAE,YAAY,GAAG,IAAI,CAqBvF;AAED;;GAEG;AACH,wBAAgB,gBAAgB,CAAC,UAAU,EAAE,MAAM,GAAG,UAAU,IAAI,SAAS,CAE5E"}

@@ -21,6 +21,9 @@ import { HttpStatus } from '../models/response';
 import { loadEnvironmentConfig } from '../config/environment';
 import { logRequest, logAuthorization } from '../utils/logger';
 
+// Import migration runner
+import { runMigrations } from '../scripts/run-migrations';
+
 // Import services
 import { LeagueService } from '../services/league-service';
 import { SeasonService } from '../services/season-service';
@@ -364,21 +367,22 @@ async function createEvent(
 
 /**
  * Route definitions
+ * Note: API Gateway stage is /v1/, so paths received don't include /v1/ prefix
  */
 const routes: Route[] = [
-  { method: 'GET', pathPattern: /^\/v1\/leagues$/, handler: getLeagues },
-  { method: 'GET', pathPattern: /^\/v1\/leagues\/[^/]+$/, handler: getLeagueById },
-  { method: 'GET', pathPattern: /^\/v1\/leagues\/[^/]+\/seasons$/, handler: getSeasonsByLeague },
-  { method: 'GET', pathPattern: /^\/v1\/seasons\/[^/]+$/, handler: getSeasonById },
-  { method: 'GET', pathPattern: /^\/v1\/seasons\/[^/]+\/games$/, handler: getGamesBySeason },
-  { method: 'GET', pathPattern: /^\/v1\/seasons\/[^/]+\/standings$/, handler: getStandingsBySeason },
-  { method: 'GET', pathPattern: /^\/v1\/leagues\/[^/]+\/teams$/, handler: getTeamsByLeague },
-  { method: 'GET', pathPattern: /^\/v1\/teams\/[^/]+$/, handler: getTeamById },
-  { method: 'GET', pathPattern: /^\/v1\/teams\/[^/]+\/players$/, handler: getPlayersByTeam },
-  { method: 'GET', pathPattern: /^\/v1\/players\/[^/]+$/, handler: getPlayerById },
-  { method: 'GET', pathPattern: /^\/v1\/games\/[^/]+$/, handler: getGameById },
-  { method: 'GET', pathPattern: /^\/v1\/games\/[^/]+\/events$/, handler: getEventsByGame },
-  { method: 'POST', pathPattern: /^\/v1\/games\/[^/]+\/events$/, handler: createEvent, requiredRole: 'scorekeeper' },
+  { method: 'GET', pathPattern: /^\/leagues$/, handler: getLeagues },
+  { method: 'GET', pathPattern: /^\/leagues\/[^/]+$/, handler: getLeagueById },
+  { method: 'GET', pathPattern: /^\/leagues\/[^/]+\/seasons$/, handler: getSeasonsByLeague },
+  { method: 'GET', pathPattern: /^\/seasons\/[^/]+$/, handler: getSeasonById },
+  { method: 'GET', pathPattern: /^\/seasons\/[^/]+\/games$/, handler: getGamesBySeason },
+  { method: 'GET', pathPattern: /^\/seasons\/[^/]+\/standings$/, handler: getStandingsBySeason },
+  { method: 'GET', pathPattern: /^\/leagues\/[^/]+\/teams$/, handler: getTeamsByLeague },
+  { method: 'GET', pathPattern: /^\/teams\/[^/]+$/, handler: getTeamById },
+  { method: 'GET', pathPattern: /^\/teams\/[^/]+\/players$/, handler: getPlayersByTeam },
+  { method: 'GET', pathPattern: /^\/players\/[^/]+$/, handler: getPlayerById },
+  { method: 'GET', pathPattern: /^\/games\/[^/]+$/, handler: getGameById },
+  { method: 'GET', pathPattern: /^\/games\/[^/]+\/events$/, handler: getEventsByGame },
+  { method: 'POST', pathPattern: /^\/games\/[^/]+\/events$/, handler: createEvent, requiredRole: 'scorekeeper' },
 ];
 
 /**
@@ -425,6 +429,15 @@ export async function handler(
     // Handle OPTIONS requests for CORS preflight
     if (method === 'OPTIONS') {
       return successResponse({}, HttpStatus.OK, undefined, requestId);
+    }
+
+    // TEMPORARY: Handle migration endpoint without authentication
+    // This must be checked BEFORE JWT validation
+    if (method === 'POST' && path === '/admin/migrate') {
+      console.log('Running database migrations...');
+      const result = await runMigrations();
+      const statusCode = result.success ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR;
+      return successResponse(result, statusCode, undefined, requestId);
     }
 
     // Load environment configuration

@@ -52,6 +52,16 @@ async function getPublicKey(kid: string, userPoolId: string, region: string): Pr
     const key = await client.getSigningKey(kid);
     return key.getPublicKey();
   } catch (error) {
+    // Log detailed error for debugging
+    console.error('JWKS Error Details:', {
+      error: error,
+      errorMessage: error instanceof Error ? error.message : 'Unknown',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      kid,
+      userPoolId,
+      region,
+    });
+    
     throw new AuthError(
       AuthErrorCode.INVALID_TOKEN,
       `Failed to get public key: ${error instanceof Error ? error.message : 'Unknown error'}`
