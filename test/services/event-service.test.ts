@@ -31,11 +31,13 @@ jest.mock('../../src/utils/apply-event-to-game');
 jest.mock('../../src/utils/standings-calculation');
 
 import { validateEventPayload } from '../../src/utils/event-validation';
+import { validateSpatialCoordinates } from '../../src/utils/spatial-coordinate-validation';
 import { writeEvent, getEventsByGame } from '../../src/config/dynamodb';
 import { applyEventToGame } from '../../src/utils/apply-event-to-game';
 import { recalculateStandings } from '../../src/utils/standings-calculation';
 
 const mockValidateEventPayload = validateEventPayload as jest.MockedFunction<typeof validateEventPayload>;
+const mockValidateSpatialCoordinates = validateSpatialCoordinates as jest.MockedFunction<typeof validateSpatialCoordinates>;
 const mockWriteEvent = writeEvent as jest.MockedFunction<typeof writeEvent>;
 const mockGetEventsByGame = getEventsByGame as jest.MockedFunction<typeof getEventsByGame>;
 const mockApplyEventToGame = applyEventToGame as jest.MockedFunction<typeof applyEventToGame>;
@@ -66,13 +68,13 @@ class MockEventRepository {
 }
 
 class MockSnapshotService {
-  generateSnapshot = jest.fn();
-  generateSnapshotFromGame = jest.fn();
+  generateSnapshot = jest.fn<() => Promise<any>>();
+  generateSnapshotFromGame = jest.fn<() => Promise<any>>();
 }
 
 class MockBroadcastService {
-  broadcastSnapshot = jest.fn();
-  sendSnapshotToConnection = jest.fn();
+  broadcastSnapshot = jest.fn<() => Promise<void>>();
+  sendSnapshotToConnection = jest.fn<() => Promise<void>>();
 }
 
 describe('EventService', () => {
@@ -529,6 +531,201 @@ describe('EventService', () => {
       );
 
       expect(mockApplyEventToGame).toHaveBeenCalledWith(tenantId, gameId, mockEvent);
+    });
+  });
+
+  describe('createEventWithSnapshot', () => {
+    const metadata: EventMetadata = {
+      user_id: 'user-1',
+      source: 'mobile',
+      ip_address: '192.168.1.1',
+    };
+
+    it('should validate spatial coordinates and throw BadRequestError with INVALID_SPATIAL_COORDINATES code', async () => {
+      const payload = {
+        team_id: 'team-1',
+        player_id: 'player-1',
+        period: 1,
+        time_remaining: '10:30',
+        spatial_coordinates: {
+          x: 1.5, // Invalid - outside 0.0-1.0 range
+          y: -0.1, // Invalid - outside 0.0-1.0 range
+        },
+      };
+
+      // Mock validation to return invalid result with error details
+      mockValidateSpatialCoordinates.mockReturnValue({
+        valid: false,
+        errors: {
+          x: 'x coordinate must be between 0.0 and 1.0, received 1.5',
+          y: 'y coordinate must be between 0.0 and 1.0, received -0.1',
+        },
+      });
+
+      try {
+        await eventService.createEventWithSnapshot(
+          tenantId,
+          gameId,
+          EventType.GOAL_SCORED,
+          payload,
+          metadata
+        );
+        expect(true).toBe(false); // Should not reach here
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(BadRequestError);
+        expect(error.message).toBe('Invalid spatial coordinates');
+        expect(error.code).toBe('INVALID_SPATIAL_COORDINATES');
+        expect(error.details).toBeDefined();
+        expect(error.details.x).toContain('1.5');
+        expect(error.details.y).toContain('-0.1');
+      }
+    });
+
+    it('should create event with valid spatial coordinates', async () => {
+      const mockGame: Game = {
+        id: gameId,
+        season_id: seasonId,
+        home_team_id: 'team-1',
+        away_team_id: 'team-2',
+        scheduled_at: new Date(),
+        status: GameStatus.LIVE,
+        home_score: 0,
+        away_score: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const payload = {
+        team_id: 'team-1',
+        player_id: 'player-1',
+        period: 1,
+        time_remaining: '10:30',
+        spatial_coordinates: {
+          x: 0.75,
+          y: 0.42,
+          zone: 'offensive',
+        },
+      };
+
+      const mockEvent: GameEvent = {
+        event_id: 'event-1',
+        game_id: gameId,
+        tenant_id: tenantId,
+        event_type: EventType.GOAL_SCORED,
+        event_version: '1.0',
+        occurred_at: '2024-01-01T10:00:00Z',
+        sort_key: '2024-01-01T10:00:00Z#event-1',
+        payload,
+        metadata,
+        ttl: 1234567890,
+        spatial_coordinates: payload.spatial_coordinates,
+      };
+
+      const mockSnapshot = {
+        game_id: gameId,
+        home_score: 1,
+        away_score: 0,
+        period: 1,
+        clock_seconds: 630,
+        status: 'in_progress',
+        recent_events: [mockEvent],
+        snapshot_version: '1.0',
+        generated_at: '2024-01-01T10:00:00Z',
+      };
+
+      // Mock validation to return valid result
+      mockValidateSpatialCoordinates.mockReturnValue({ valid: true });
+      mockGameRepository.findById.mockResolvedValue(mockGame);
+      mockValidateEventPayload.mockReturnValue(undefined);
+      mockWriteEvent.mockResolvedValue(mockEvent);
+      mockApplyEventToGame.mockResolvedValue(undefined);
+      mockSnapshotService.generateSnapshotFromGame.mockResolvedValue(mockSnapshot);
+      mockBroadcastService.broadcastSnapshot.mockResolvedValue(undefined);
+
+      const result = await eventService.createEventWithSnapshot(
+        tenantId,
+        gameId,
+        EventType.GOAL_SCORED,
+        payload,
+        metadata
+      );
+
+      expect(result.event).toEqual(mockEvent);
+      expect(result.snapshot).toEqual(mockSnapshot);
+      expect(mockValidateSpatialCoordinates).toHaveBeenCalledWith(payload.spatial_coordinates);
+      expect(mockBroadcastService.broadcastSnapshot).toHaveBeenCalledWith(
+        tenantId,
+        gameId,
+        mockSnapshot,
+        'snapshot_update'
+      );
+    });
+
+    it('should accept events without spatial coordinates for backward compatibility', async () => {
+      const mockGame: Game = {
+        id: gameId,
+        season_id: seasonId,
+        home_team_id: 'team-1',
+        away_team_id: 'team-2',
+        scheduled_at: new Date(),
+        status: GameStatus.LIVE,
+        home_score: 0,
+        away_score: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const payload = {
+        team_id: 'team-1',
+        player_id: 'player-1',
+        period: 1,
+        time_remaining: '10:30',
+        // No spatial_coordinates
+      };
+
+      const mockEvent: GameEvent = {
+        event_id: 'event-1',
+        game_id: gameId,
+        tenant_id: tenantId,
+        event_type: EventType.GOAL_SCORED,
+        event_version: '1.0',
+        occurred_at: '2024-01-01T10:00:00Z',
+        sort_key: '2024-01-01T10:00:00Z#event-1',
+        payload,
+        metadata,
+        ttl: 1234567890,
+      };
+
+      const mockSnapshot = {
+        game_id: gameId,
+        home_score: 1,
+        away_score: 0,
+        period: 1,
+        clock_seconds: 630,
+        status: 'in_progress',
+        recent_events: [mockEvent],
+        snapshot_version: '1.0',
+        generated_at: '2024-01-01T10:00:00Z',
+      };
+
+      mockGameRepository.findById.mockResolvedValue(mockGame);
+      mockValidateEventPayload.mockReturnValue(undefined);
+      mockWriteEvent.mockResolvedValue(mockEvent);
+      mockApplyEventToGame.mockResolvedValue(undefined);
+      mockSnapshotService.generateSnapshotFromGame.mockResolvedValue(mockSnapshot);
+      mockBroadcastService.broadcastSnapshot.mockResolvedValue(undefined);
+
+      const result = await eventService.createEventWithSnapshot(
+        tenantId,
+        gameId,
+        EventType.GOAL_SCORED,
+        payload,
+        metadata
+      );
+
+      expect(result.event).toEqual(mockEvent);
+      expect(result.snapshot).toEqual(mockSnapshot);
+      expect(mockValidateSpatialCoordinates).not.toHaveBeenCalled();
     });
   });
 });

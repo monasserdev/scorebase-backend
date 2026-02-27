@@ -157,7 +157,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Trigger broadcast using BroadcastService
     - _Requirements: 1.1-1.5, 2.1, 7.1, 13.1-13.3_
   
-  - [~] 6.2 Implement spatial coordinate validation in event creation
+  - [x] 6.2 Implement spatial coordinate validation in event creation
     - Call validateSpatialCoordinates utility
     - Return 400 INVALID_SPATIAL_COORDINATES on failure
     - Include invalid values in error details
