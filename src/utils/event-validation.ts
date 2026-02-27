@@ -91,6 +91,28 @@ const penaltyAssessedSchema: JSONSchemaType<PenaltyAssessedPayload> = {
 };
 
 /**
+ * SHOT_ON_GOAL event payload schema
+ */
+interface ShotOnGoalPayload {
+  team_id: string;
+  player_id: string;
+  period: number;
+  time_remaining: string;
+}
+
+const shotOnGoalSchema: JSONSchemaType<ShotOnGoalPayload> = {
+  type: 'object',
+  properties: {
+    team_id: { type: 'string', format: 'uuid' },
+    player_id: { type: 'string', format: 'uuid' },
+    period: { type: 'number', minimum: 1 },
+    time_remaining: { type: 'string', pattern: '^\\d{2}:\\d{2}$' }
+  },
+  required: ['team_id', 'player_id', 'period', 'time_remaining'],
+  additionalProperties: false
+};
+
+/**
  * PERIOD_ENDED event payload schema
  */
 interface PeriodEndedPayload {
@@ -191,6 +213,7 @@ const validators = {
   [EventType.GAME_STARTED]: ajv.compile(gameStartedSchema),
   [EventType.GOAL_SCORED]: ajv.compile(goalScoredSchema),
   [EventType.PENALTY_ASSESSED]: ajv.compile(penaltyAssessedSchema),
+  [EventType.SHOT_ON_GOAL]: ajv.compile(shotOnGoalSchema),
   [EventType.PERIOD_ENDED]: ajv.compile(periodEndedSchema),
   [EventType.GAME_FINALIZED]: ajv.compile(gameFinalizedSchema),
   [EventType.GAME_CANCELLED]: ajv.compile(gameCancelledSchema),

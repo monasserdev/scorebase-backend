@@ -368,10 +368,10 @@ export class EventService {
       }
 
       // 4. Validate event type is reversible
-      // Note: SHOT_ON_GOAL will be added in future tasks
       const reversibleEventTypes = [
         EventType.GOAL_SCORED,
         EventType.PENALTY_ASSESSED,
+        EventType.SHOT_ON_GOAL,
       ];
 
       if (!reversibleEventTypes.includes(eventToReverse.event_type as EventType)) {
@@ -426,8 +426,8 @@ export class EventService {
      * 
      * Implements reversal logic for different event types:
      * - GOAL_SCORED: Decrements the appropriate team's score by 1
-     * - PENALTY_ASSESSED: Removes the penalty from active penalties (future task)
-     * - SHOT_ON_GOAL: Updates shot statistics (future task)
+     * - PENALTY_ASSESSED: Removes the penalty from active penalties (placeholder)
+     * - SHOT_ON_GOAL: Updates shot statistics (placeholder)
      * 
      * @param tenantId - Tenant identifier
      * @param gameId - Game identifier
@@ -448,6 +448,10 @@ export class EventService {
           
           case EventType.PENALTY_ASSESSED:
             await this.reversePenaltyAssessed(tenantId, gameId, eventToReverse);
+            break;
+          
+          case EventType.SHOT_ON_GOAL:
+            await this.reverseShotOnGoal(tenantId, gameId, eventToReverse);
             break;
           
           // Future event types can be added here
@@ -570,6 +574,67 @@ export class EventService {
         // For now, log the reversal for audit purposes
         // The penalty reversal will be fully functional once the Game model
         // includes penalty tracking (future enhancement)
+
+        // Update game's updated_at timestamp to reflect the reversal
+        await client.query(
+          `UPDATE games
+           SET updated_at = NOW()
+           WHERE id = $1`,
+          [gameId]
+        );
+      });
+    }
+
+    /**
+     * Reverse a SHOT_ON_GOAL event by updating shot statistics
+     *
+     * NOTE: This is a placeholder implementation. The Game model does not currently
+     * have shot statistics fields (shots_on_goal_home, shots_on_goal_away, etc.).
+     * This method logs the reversal for audit purposes and will be enhanced when
+     * shot tracking is added to the Game model.
+     *
+     * @param tenantId - Tenant identifier
+     * @param gameId - Game identifier
+     * @param shotEvent - The original SHOT_ON_GOAL event
+     */
+    private async reverseShotOnGoal(
+      tenantId: string,
+      gameId: string,
+      shotEvent: GameEvent
+    ): Promise<void> {
+      const { team_id } = shotEvent.payload;
+
+      // Use a transaction to ensure atomic update
+      await transaction(async (client) => {
+        // Verify game exists and belongs to tenant
+        const gameCheck = await client.query(
+          `SELECT g.id, g.home_team_id, g.away_team_id
+           FROM games g
+           INNER JOIN seasons s ON g.season_id = s.id
+           INNER JOIN leagues l ON s.league_id = l.id
+           WHERE l.tenant_id = $1 AND g.id = $2`,
+          [tenantId, gameId]
+        );
+
+        if (gameCheck.rows.length === 0) {
+          throw new NotFoundError(`Game not found: ${gameId}`);
+        }
+
+        const game = gameCheck.rows[0];
+
+        // Verify team is part of the game
+        if (team_id !== game.home_team_id && team_id !== game.away_team_id) {
+          throw new BadRequestError(`Team ${team_id} is not part of game ${gameId}`);
+        }
+
+        // TODO: When shot statistics fields are added to Game model:
+        // 1. Query current shot statistics from games table
+        // 2. Decrement the appropriate team's shot count by 1
+        // 3. Update games table with modified shot statistics
+        //
+        // For now, log the reversal for audit purposes
+        // The shot reversal will be fully functional once the Game model
+        // includes shot tracking (future enhancement)
 
         // Update game's updated_at timestamp to reflect the reversal
         await client.query(

@@ -196,7 +196,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Update game state in RDS
     - _Requirements: 6.6, 15.4_
   
-  - [~] 6.8 Implement reversal logic for SHOT_ON_GOAL
+  - [x] 6.8 Implement reversal logic for SHOT_ON_GOAL
     - Update shot statistics
     - Update game state in RDS
     - _Requirements: 15.5_
