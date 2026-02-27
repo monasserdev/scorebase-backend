@@ -92,17 +92,23 @@ function createSortKey(occurred_at: string, event_id: string): string {
  * Write event to DynamoDB with TTL calculation
  * 
  * @param params - Event creation parameters
+ * @param options - Optional parameters for idempotency, occurred_at, and spatial coordinates
  * @returns Created event
  */
 export async function writeEvent(
-  params: CreateEventParams
+  params: CreateEventParams,
+  options?: {
+    occurred_at?: string;
+    idempotency_key?: string;
+    spatial_coordinates?: { x: number; y: number; zone?: string };
+  }
 ): Promise<GameEvent> {
   const startTime = Date.now();
   const client = getDynamoDBClient();
   const config = loadEnvironmentConfig();
 
   const event_id = uuidv4();
-  const occurred_at = new Date().toISOString();
+  const occurred_at = options?.occurred_at || new Date().toISOString();
   const sort_key = createSortKey(occurred_at, event_id);
   const ttl = calculateTTL();
 
@@ -118,6 +124,15 @@ export async function writeEvent(
     metadata: params.metadata,
     ttl,
   };
+
+  // Add optional fields if provided
+  if (options?.idempotency_key) {
+    event.idempotency_key = options.idempotency_key;
+  }
+
+  if (options?.spatial_coordinates) {
+    event.spatial_coordinates = options.spatial_coordinates;
+  }
 
   try {
     await client.send(

@@ -16,12 +16,16 @@ import { GameRepository } from '../../src/repositories/game-repository';
 import { SeasonRepository } from '../../src/repositories/season-repository';
 import { TeamRepository } from '../../src/repositories/team-repository';
 import { StandingsRepository } from '../../src/repositories/standings-repository';
+import { EventRepository } from '../../src/repositories/event-repository';
+import { SnapshotService } from '../../src/services/snapshot-service';
+import { BroadcastService } from '../../src/services/broadcast-service';
 import { EventType, GameEvent, EventMetadata } from '../../src/models/event';
 import { Game, GameStatus } from '../../src/models/game';
 import { BadRequestError, NotFoundError } from '../../src/models/errors';
 
 // Mock utility modules
 jest.mock('../../src/utils/event-validation');
+jest.mock('../../src/utils/spatial-coordinate-validation');
 jest.mock('../../src/config/dynamodb');
 jest.mock('../../src/utils/apply-event-to-game');
 jest.mock('../../src/utils/standings-calculation');
@@ -56,12 +60,30 @@ class MockStandingsRepository {
   findBySeasonId = jest.fn();
 }
 
+class MockEventRepository {
+  findByIdempotencyKey = jest.fn();
+  isEventReversed = jest.fn();
+}
+
+class MockSnapshotService {
+  generateSnapshot = jest.fn();
+  generateSnapshotFromGame = jest.fn();
+}
+
+class MockBroadcastService {
+  broadcastSnapshot = jest.fn();
+  sendSnapshotToConnection = jest.fn();
+}
+
 describe('EventService', () => {
   let eventService: EventService;
   let mockGameRepository: MockGameRepository;
   let mockSeasonRepository: MockSeasonRepository;
   let mockTeamRepository: MockTeamRepository;
   let mockStandingsRepository: MockStandingsRepository;
+  let mockEventRepository: MockEventRepository;
+  let mockSnapshotService: MockSnapshotService;
+  let mockBroadcastService: MockBroadcastService;
   
   const tenantId = 'tenant-123';
   const gameId = 'game-456';
@@ -73,6 +95,9 @@ describe('EventService', () => {
     mockSeasonRepository = new MockSeasonRepository();
     mockTeamRepository = new MockTeamRepository();
     mockStandingsRepository = new MockStandingsRepository();
+    mockEventRepository = new MockEventRepository();
+    mockSnapshotService = new MockSnapshotService();
+    mockBroadcastService = new MockBroadcastService();
     
     // Reset all mocks
     jest.clearAllMocks();
@@ -81,7 +106,10 @@ describe('EventService', () => {
       mockGameRepository as unknown as GameRepository,
       mockSeasonRepository as unknown as SeasonRepository,
       mockTeamRepository as unknown as TeamRepository,
-      mockStandingsRepository as unknown as StandingsRepository
+      mockStandingsRepository as unknown as StandingsRepository,
+      mockEventRepository as unknown as EventRepository,
+      mockSnapshotService as unknown as SnapshotService,
+      mockBroadcastService as unknown as BroadcastService
     );
   });
 

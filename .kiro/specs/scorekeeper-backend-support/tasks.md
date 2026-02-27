@@ -113,7 +113,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Test recent_events ordering and limit
     - _Requirements: 2.1-2.7, 3.3, 3.4, 3.5_
 
-- [ ] 5. Implement BroadcastService
+- [x] 5. Implement BroadcastService
   - [x] 5.1 Create BroadcastService class
     - Implement broadcastSnapshot method
     - Implement sendSnapshotToConnection method
@@ -147,7 +147,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - _Requirements: 4.5, 5.2, 11.3_
 
 - [ ] 6. Enhance EventService with new features
-  - [~] 6.1 Add createEventWithSnapshot method
+  - [x] 6.1 Add createEventWithSnapshot method
     - Validate spatial coordinates if present
     - Check idempotency_key for duplicates
     - Preserve client-provided occurred_at timestamp
