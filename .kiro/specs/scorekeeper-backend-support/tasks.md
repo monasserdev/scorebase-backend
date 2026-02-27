@@ -64,7 +64,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Use DynamoDB client with proper error handling
     - _Requirements: 4.1, 11.1, 11.2_
   
-  - [~] 3.2 Enhance EventRepository with idempotency support
+  - [x] 3.2 Enhance EventRepository with idempotency support
     - Add findByIdempotencyKey method using GSI query
     - Add isEventReversed method to check for reversal events
     - _Requirements: 13.1, 15.1_
