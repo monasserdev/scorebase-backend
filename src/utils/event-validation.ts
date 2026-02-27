@@ -168,6 +168,24 @@ const scoreCorrectedSchema: JSONSchemaType<ScoreCorrectedPayload> = {
   additionalProperties: false
 };
 
+/**
+ * EVENT_REVERSAL event payload schema
+ */
+interface EventReversalPayload {
+  reversed_event_id: string;
+  reason?: string;
+}
+
+const eventReversalSchema: JSONSchemaType<EventReversalPayload> = {
+  type: 'object',
+  properties: {
+    reversed_event_id: { type: 'string', format: 'uuid' },
+    reason: { type: 'string', nullable: true }
+  },
+  required: ['reversed_event_id'],
+  additionalProperties: false
+};
+
 // Compile schemas
 const validators = {
   [EventType.GAME_STARTED]: ajv.compile(gameStartedSchema),
@@ -176,7 +194,8 @@ const validators = {
   [EventType.PERIOD_ENDED]: ajv.compile(periodEndedSchema),
   [EventType.GAME_FINALIZED]: ajv.compile(gameFinalizedSchema),
   [EventType.GAME_CANCELLED]: ajv.compile(gameCancelledSchema),
-  [EventType.SCORE_CORRECTED]: ajv.compile(scoreCorrectedSchema)
+  [EventType.SCORE_CORRECTED]: ajv.compile(scoreCorrectedSchema),
+  [EventType.EVENT_REVERSAL]: ajv.compile(eventReversalSchema)
 };
 
 /**

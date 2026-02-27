@@ -27,7 +27,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Define message_type enum (initial_snapshot, snapshot_update, ping, pong)
     - _Requirements: 14.1-14.6_
   
-  - [~] 1.5 Extend GameEvent interface
+  - [x] 1.5 Extend GameEvent interface
     - Add idempotency_key, reversed_by, spatial_coordinates optional fields
     - Add EVENT_REVERSAL to EventType enum
     - _Requirements: 6.1, 13.1, 1.4_

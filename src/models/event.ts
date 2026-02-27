@@ -60,6 +60,7 @@ export enum EventType {
   GAME_FINALIZED = 'GAME_FINALIZED',
   GAME_CANCELLED = 'GAME_CANCELLED',
   SCORE_CORRECTED = 'SCORE_CORRECTED',
+  EVENT_REVERSAL = 'EVENT_REVERSAL',
 }
 
 /**
@@ -88,11 +89,14 @@ export interface GameEvent {
   tenant_id: string;          // For GSI queries
   event_type: EventType;      // Type of event
   event_version: string;      // Schema version (e.g., "1.0")
-  occurred_at: string;        // ISO-8601 timestamp
+  occurred_at: string;        // ISO-8601 timestamp (may be client-provided for offline events)
   sort_key: string;           // occurred_at#event_id for chronological ordering
   payload: EventPayload;      // Event-specific data
   metadata: EventMetadata;    // User, source, IP
   ttl: number;                // Unix timestamp for DynamoDB TTL (90 days)
+  idempotency_key?: string;   // Optional idempotency key for duplicate prevention
+  reversed_by?: string;       // Event ID that reversed this event
+  spatial_coordinates?: SpatialCoordinates; // Optional location data for event
 }
 
 /**
