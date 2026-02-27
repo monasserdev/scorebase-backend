@@ -4,8 +4,50 @@
  * Type definitions for game events stored in DynamoDB.
  * Events are immutable and provide an audit trail of all game actions.
  * 
- * Requirements: 6.1, 6.2, 6.3, 6.4, 6.5
+ * Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 1.1, 1.2, 1.4
  */
+
+/**
+ * Normalized spatial coordinates for event location on playing surface
+ * 
+ * Coordinates use a normalized 0.0-1.0 range to be resolution-independent:
+ * - x: 0.0 (left edge) to 1.0 (right edge)
+ * - y: 0.0 (top edge) to 1.0 (bottom edge)
+ * - zone: Optional semantic zone identifier
+ * 
+ * Stored with 4 decimal place precision for analytics.
+ * 
+ * Requirements: 1.1, 1.2, 1.4, 12.1, 12.2, 12.3
+ */
+export interface SpatialCoordinates {
+  /**
+   * Horizontal position (0.0 = left, 1.0 = right)
+   * Must be between 0.0 and 1.0 inclusive
+   */
+  x: number;
+  
+  /**
+   * Vertical position (0.0 = top, 1.0 = bottom)
+   * Must be between 0.0 and 1.0 inclusive
+   */
+  y: number;
+  
+  /**
+   * Optional zone identifier (e.g., "offensive", "defensive", "neutral")
+   */
+  zone?: string;
+}
+
+/**
+ * Validation result for spatial coordinates
+ */
+export interface SpatialCoordinateValidationResult {
+  valid: boolean;
+  errors?: {
+    x?: string;
+    y?: string;
+  };
+}
 
 /**
  * Supported event types for game actions
