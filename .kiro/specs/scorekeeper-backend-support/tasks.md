@@ -126,7 +126,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Handle failed connections by removing from store
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
   
-  - [~] 5.3 Implement batch broadcasting logic
+  - [x] 5.3 Implement batch broadcasting logic
     - Iterate through connections and send messages
     - Log broadcast failures
     - Remove failed connections
