@@ -120,7 +120,7 @@ The implementation follows a bottom-up approach: data models â†’ repositories â†
     - Use API Gateway Management API for posting messages
     - _Requirements: 4.5, 4.6, 8.3_
   
-  - [~] 5.2 Implement connection filtering and tenant isolation
+  - [x] 5.2 Implement connection filtering and tenant isolation
     - Query ConnectionRepository for game connections
     - Filter connections by tenant_id
     - Handle failed connections by removing from store
